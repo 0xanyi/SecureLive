@@ -1,4 +1,4 @@
-# STPPL UK and Europe - UI/UX Design Specifications
+# Secure Live Stream Portal - UI/UX Design Specifications
 
 ## Design Principles
 - **Minimal & Clean**: Focus on content, reduce distractions

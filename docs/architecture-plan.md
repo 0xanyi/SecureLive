@@ -1,4 +1,4 @@
-# STPPL UK and Europe - Event Streaming Platform Architecture
+# Secure Live Stream Portal - Event Streaming Platform Architecture
 
 ## Event Details
 - **Event Name**: STPPL UK and Europe

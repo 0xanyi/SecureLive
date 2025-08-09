@@ -1,4 +1,4 @@
-# STPPL UK and Europe - Setup Guide
+# Secure Live Stream Portal - Setup Guide
 
 ## Prerequisites
 

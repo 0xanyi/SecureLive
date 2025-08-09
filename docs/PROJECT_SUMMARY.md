@@ -1,4 +1,4 @@
-# STPPL UK and Europe - Event Streaming Platform
+# Secure Live Stream Portal - Event Streaming Platform
 ## Project Summary & Next Steps
 
 ### 📅 Event Information
