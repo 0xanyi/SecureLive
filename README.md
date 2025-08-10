@@ -18,6 +18,29 @@ Secure Live Stream Portal provides a secure platform for hosting private live st
 - **⚡ Real-time Updates**: Live session heartbeat monitoring
 - **🛠️ Admin Dashboard**: Comprehensive admin panel for event and access code management
 
+## 🆕 Latest Features (v2.0)
+
+### Dynamic Streaming Configuration
+- **Admin-Controlled HLS Settings**: Update streaming URLs, player IDs, and tokens from the admin panel
+- **Real-time Stream Updates**: Changes take effect immediately without code deployment
+- **Flexible Player Configuration**: Control autoplay, muted state, and other player options
+- **Multi-Provider Support**: Works with Wowza, custom HLS streams, and other providers
+
+### Role-Based User Management
+- **Three-Tier Admin System**:
+  - **Super Admin**: Full system access including user management
+  - **Admin**: Most features except user management
+  - **Code Generator**: Limited to access code generation only
+- **Granular Permissions**: Custom permission sets for each user
+- **Secure User Creation**: Bcrypt password hashing and session management
+- **Permission-Based Navigation**: Users only see features they can access
+
+### Enhanced Security & Access Control
+- **API Permission Validation**: All endpoints check user permissions
+- **Role Hierarchy Protection**: Prevents privilege escalation
+- **Self-Protection**: Users cannot delete their own accounts
+- **Session-Based Authentication**: JWT tokens with secure cookie handling
+
 ## 🚀 Tech Stack
 
 - **Frontend**: Next.js 15.4.6 (App Router), TypeScript, Tailwind CSS
@@ -70,9 +93,12 @@ Secure Live Stream Portal provides a secure platform for hosting private live st
    BREVO_SENDER_EMAIL=your_sender_email
    BREVO_SENDER_NAME=your_sender_name
 
-   # Admin Authentication
+   # Admin Authentication (Default Super Admin)
    ADMIN_USERNAME=your_admin_username
    ADMIN_PASSWORD=your_admin_password
+
+   # JWT Secret for Admin Sessions
+   JWT_SECRET=your_jwt_secret_key
 
    # Application
    NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -104,19 +130,28 @@ secure-live-stream-portal/
 │   │   │   ├── events/      # Events management
 │   │   │   ├── codes/       # Access codes management
 │   │   │   ├── analytics/   # Analytics dashboard
-│   │   │   └── sessions/    # Session management
+│   │   │   ├── sessions/    # Session management
+│   │   │   ├── users/       # **NEW**: Admin user management
+│   │   │   └── settings/    # **UPDATED**: System & streaming settings
 │   │   ├── api/             # API routes
 │   │   │   ├── admin/       # Admin API endpoints
-│   │   │   │   └── events/  # Events CRUD operations
+│   │   │   │   ├── events/  # Events CRUD operations
+│   │   │   │   ├── users/   # **NEW**: User management API
+│   │   │   │   ├── settings/ # System settings API
+│   │   │   │   └── streaming-settings/ # **NEW**: Streaming config API
 │   │   │   └── events/      # Public events API
 │   │   ├── login/           # User login page
 │   │   └── stream/          # Streaming page
 │   ├── components/          # React components
 │   │   ├── admin/           # Admin-specific components
-│   │   │   └── EventsManagement.tsx  # Events admin interface
+│   │   │   ├── EventsManagement.tsx  # Events admin interface
+│   │   │   ├── UserManagement.tsx    # **NEW**: Admin user management
+│   │   │   ├── SystemSettings.tsx    # **UPDATED**: Settings with streaming config
+│   │   │   └── AdminSidebar.tsx      # **UPDATED**: Role-based navigation
 │   │   ├── auth/            # Authentication components
 │   │   ├── stream/          # Streaming components
-│   │   │   └── EventInfo.tsx  # Event info sidebar
+│   │   │   ├── EventInfo.tsx  # Event info sidebar
+│   │   │   └── VideoPlayer.tsx # **UPDATED**: Dynamic streaming configuration
 │   │   └── ui/              # Shared UI components
 │   │       ├── DynamicHeader.tsx  # Dynamic login header
 │   │       └── CurrentEvent.tsx   # Event banner component
@@ -138,13 +173,13 @@ secure-live-stream-portal/
 
 The application requires the following database tables:
 
-- `admin_users` - Admin authentication and user management
+- `admin_users` - **UPDATED**: Admin authentication with role-based permissions
 - `access_codes` - Stores authentication codes for centers and individuals
 - `sessions` - Manages active user sessions with heartbeat monitoring
 - `attendance_logs` - Daily attendance tracking and session duration
 - `email_logs` - Email sending history and status tracking
-- `system_settings` - Stores application configuration
-- `events` - **NEW**: Live streaming events with automatic scheduling
+- `system_settings` - **UPDATED**: Includes streaming configuration and system settings
+- `events` - Live streaming events with automatic scheduling
 
 #### Events System
 
@@ -158,9 +193,76 @@ The events system provides:
 
 See `supabase-schema.sql` for the complete schema, or use `missing-tables.sql` to add events to existing setups.
 
-### Admin Access
+### Admin Access & User Roles
 
 Access the admin dashboard at `/admin` using the credentials set in your environment variables.
+
+#### User Roles & Permissions
+
+**Super Admin** (Full Access)
+- ✅ Manage admin users (create, edit, delete)
+- ✅ Configure system settings and streaming
+- ✅ Manage events and access codes
+- ✅ View analytics and manage emails
+- ✅ Monitor active sessions
+
+**Admin** (Most Features)
+- ❌ Cannot manage admin users
+- ✅ Configure system settings and streaming
+- ✅ Manage events and access codes
+- ✅ View analytics and manage emails
+- ✅ Monitor active sessions
+
+**Code Generator** (Limited Access)
+- ❌ Cannot manage users or settings
+- ❌ Cannot manage events or view analytics
+- ✅ Generate and manage access codes only
+- ✅ Monitor active sessions
+
+#### Creating Additional Admin Users
+
+1. Log in as a Super Admin
+2. Navigate to **Admin → Admin Users**
+3. Click **Add User** and configure:
+   - Email and name
+   - Password (securely hashed)
+   - Role (Super Admin, Admin, or Code Generator)
+   - Custom permissions (optional)
+
+#### Streaming Configuration
+
+Super Admins and Admins can update streaming settings:
+
+1. Navigate to **Admin → Settings → Streaming**
+2. Update HLS URL, Player ID, and authentication token
+3. Configure autoplay and muted settings
+4. Save changes (takes effect immediately)
+
+## 🔌 API Endpoints
+
+### New Admin User Management APIs
+
+- `GET /api/admin/users` - List all admin users (Super Admin only)
+- `POST /api/admin/users` - Create new admin user (Super Admin only)
+- `PUT /api/admin/users/[id]` - Update admin user (Super Admin only)
+- `DELETE /api/admin/users/[id]` - Delete admin user (Super Admin only)
+
+### Streaming Configuration APIs
+
+- `GET /api/admin/streaming-settings` - Get current streaming configuration
+- `POST /api/admin/settings` - Update system settings including streaming config
+
+### Enhanced Admin APIs
+
+- `GET /api/admin/validate` - **UPDATED**: Returns user info with permissions
+- `POST /api/admin/settings` - **UPDATED**: Includes streaming configuration
+
+### Permission Validation
+
+All admin APIs now validate user permissions:
+- **Super Admin**: Full access to all endpoints
+- **Admin**: Access based on specific permissions
+- **Code Generator**: Limited to code-related endpoints only
 
 ## 📚 Documentation
 
@@ -234,12 +336,16 @@ The application includes a `vercel.json` configuration file for optimal deployme
 ## 🔐 Security Features
 
 - **Secure Code-Based Authentication**: Unique access codes for centers and individuals
+- **Role-Based Access Control**: Multi-tier admin system with granular permissions
 - **Session Management**: Heartbeat monitoring with automatic cleanup
-- **Admin Authentication**: Separate admin login with JWT-based sessions
+- **Admin Authentication**: JWT-based sessions with secure cookie handling
+- **Password Security**: Bcrypt hashing with salt rounds for admin accounts
+- **Permission Validation**: All API endpoints validate user permissions
 - **Database Security**: Row Level Security (RLS) policies and parameterized queries
 - **Environment Protection**: Sensitive data secured via environment variables
 - **Rate Limiting**: Protection against brute force attacks
 - **Automated Event Security**: Events automatically activate/deactivate based on dates
+- **Self-Protection**: Users cannot delete their own accounts or escalate privileges
 
 ## 🎯 Events System Features
 

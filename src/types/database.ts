@@ -3,8 +3,17 @@ export interface AdminUser {
   email: string
   name: string
   password_hash: string
-  role: 'admin' | 'super_admin'
+  role: 'admin' | 'super_admin' | 'code_generator'
+  permissions: {
+    canManageUsers?: boolean
+    canManageSettings?: boolean
+    canManageEvents?: boolean
+    canGenerateCodes?: boolean
+    canViewAnalytics?: boolean
+    canManageEmails?: boolean
+  }
   last_login?: string
+  created_by?: string
   created_at: string
   updated_at: string
 }

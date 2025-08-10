@@ -1,64 +1,94 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { Play, Volume2, VolumeX, Maximize, Loader2 } from 'lucide-react'
+import { useEffect, useState } from "react";
+import { Play, Volume2, VolumeX, Maximize, Loader2 } from "lucide-react";
 
 interface VideoPlayerProps {
-  sessionId: string
-  embedCode?: string
+  sessionId: string;
+  embedCode?: string;
 }
 
 export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showUnmuteOverlay, setShowUnmuteOverlay] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showUnmuteOverlay, setShowUnmuteOverlay] = useState(true);
+  const [streamingSettings, setStreamingSettings] = useState({
+    hlsUrl:
+      "https://cdn3.wowza.com/5/NVF5TVdNQmR5OHRI/cln/smil:clnout.smil/playlist.m3u8",
+    playerId: "46fbbf30-5af9-4860-b4b1-6706ac91984e",
+    playerToken:
+      "eyJraWQiOiJYMzdESU55UmF6bFEiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJjIjoie1wiYWNsXCI6MzgsXCJpZFwiOlwiWDM3RElOeVJhemxRXCJ9IiwiaXNzIjoiRmxvd3BsYXllciJ9._rtVLPQzfdsbtI4UHrjX1IzwwfGTPQK988D8W0C9sEOrvZEG82i9S4ApbIkxYY5sQwq38h2DWFypXM2d15AYng",
+    autoplay: false,
+    muted: true,
+  });
+
+  // Load streaming settings
+  useEffect(() => {
+    const loadStreamingSettings = async () => {
+      try {
+        const response = await fetch("/api/admin/streaming-settings");
+        const data = await response.json();
+        if (data.success && data.streamingSettings) {
+          setStreamingSettings(data.streamingSettings);
+        }
+      } catch (error) {
+        console.error("Failed to load streaming settings:", error);
+      }
+    };
+
+    loadStreamingSettings();
+  }, []);
 
   useEffect(() => {
     // Send heartbeat to keep session active
     const heartbeatInterval = setInterval(async () => {
       try {
-        await fetch('/api/sessions/heartbeat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/sessions/heartbeat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId }),
-        })
+        });
       } catch (err) {
-        console.error('Heartbeat failed:', err)
+        console.error("Heartbeat failed:", err);
       }
-    }, 30000) // Every 30 seconds
+    }, 30000); // Every 30 seconds
 
-    return () => clearInterval(heartbeatInterval)
-  }, [sessionId])
+    return () => clearInterval(heartbeatInterval);
+  }, [sessionId]);
 
   useEffect(() => {
     const initializeFlowplayer = () => {
       try {
-        setIsLoading(true)
-        console.log('Starting Flowplayer initialization...')
-        
+        setIsLoading(true);
+        console.log("Starting Flowplayer initialization...");
+
         // Listen for player ready event
         const handlePlayerReady = () => {
-          console.log('Received player ready event')
-          setIsLoading(false)
-        }
-        
+          console.log("Received player ready event");
+          setIsLoading(false);
+        };
+
         // Listen for unmute event
         const handlePlayerUnmuted = () => {
-          console.log('Player unmuted, hiding overlay')
-          setShowUnmuteOverlay(false)
-        }
-        
-        window.addEventListener('flowplayer-ready', handlePlayerReady)
-        window.addEventListener('flowplayer-unmuted', handlePlayerUnmuted)
-        
+          console.log("Player unmuted, hiding overlay");
+          setShowUnmuteOverlay(false);
+        };
+
+        window.addEventListener("flowplayer-ready", handlePlayerReady);
+        window.addEventListener("flowplayer-unmuted", handlePlayerUnmuted);
+
         // Create script and add to head immediately
-        const script = document.createElement('script')
-        script.type = 'module'
+        const script = document.createElement("script");
+        script.type = "module";
         script.innerHTML = `
-          import flowplayer from "https://embed.wowza.com/46fbbf30-5af9-4860-b4b1-6706ac91984e.js";
+          import flowplayer from "https://embed.wowza.com/${
+            streamingSettings.playerId
+          }.js";
           
           const initPlayer = () => {
-            const playerElement = document.getElementById('player-46fbbf30-5af9-4860-b4b1-6706ac91984e');
+            const playerElement = document.getElementById('player-${
+              streamingSettings.playerId
+            }');
             if (!playerElement) {
               console.log('Player element not found, retrying in 50ms...');
               setTimeout(initPlayer, 50);
@@ -67,9 +97,17 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
             
             console.log('Player element found, initializing Flowplayer...');
             try {
-              const player = flowplayer("#player-46fbbf30-5af9-4860-b4b1-6706ac91984e", {
-                "src": "https://cdn3.wowza.com/5/NVF5TVdNQmR5OHRI/cln/smil:clnout.smil/playlist.m3u8",
-                token: "eyJraWQiOiJYMzdESU55UmF6bFEiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJjIjoie1wiYWNsXCI6MzgsXCJpZFwiOlwiWDM3RElOeVJhemxRXCJ9IiwiaXNzIjoiRmxvd3BsYXllciJ9._rtVLPQzfdsbtI4UHrjX1IzwwfGTPQK988D8W0C9sEOrvZEG82i9S4ApbIkxYY5sQwq38h2DWFypXM2d15AYng"
+              const player = flowplayer("#player-${
+                streamingSettings.playerId
+              }", {
+                "src": "${streamingSettings.hlsUrl}",
+                ${
+                  streamingSettings.playerToken
+                    ? `token: "${streamingSettings.playerToken}",`
+                    : ""
+                }
+                autoplay: ${streamingSettings.autoplay},
+                muted: ${streamingSettings.muted}
               });
               
               // Hide loading as soon as player is ready
@@ -103,34 +141,31 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
           
           // Start trying to initialize after a small delay
           setTimeout(initPlayer, 200);
-        `
-        
-        document.head.appendChild(script)
-        console.log('Flowplayer script added to head')
-        
+        `;
+
+        document.head.appendChild(script);
+        console.log("Flowplayer script added to head");
+
         // Fallback timeout - reduced to 1 second
         setTimeout(() => {
-          console.log('Fallback timeout - setting loading to false')
-          setIsLoading(false)
-        }, 1000)
-        
+          console.log("Fallback timeout - setting loading to false");
+          setIsLoading(false);
+        }, 1000);
+
         // Cleanup
         return () => {
-          window.removeEventListener('flowplayer-ready', handlePlayerReady)
-          window.removeEventListener('flowplayer-unmuted', handlePlayerUnmuted)
-        }
-        
+          window.removeEventListener("flowplayer-ready", handlePlayerReady);
+          window.removeEventListener("flowplayer-unmuted", handlePlayerUnmuted);
+        };
       } catch (err) {
-        console.error('Failed to initialize Flowplayer:', err)
-        setError('Failed to load video player')
-        setIsLoading(false)
+        console.error("Failed to initialize Flowplayer:", err);
+        setError("Failed to load video player");
+        setIsLoading(false);
       }
-    }
+    };
 
-    return initializeFlowplayer()
-  }, [])
-
-
+    return initializeFlowplayer();
+  }, [streamingSettings]);
 
   if (error) {
     return (
@@ -139,7 +174,7 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
           <div className="text-4xl mb-4">⚠️</div>
           <h3 className="text-xl font-semibold mb-2">Video Player Error</h3>
           <p className="text-red-300">{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
@@ -147,7 +182,7 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   if (isLoading) {
@@ -158,38 +193,45 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
           <p className="text-lg">Loading video player...</p>
         </div>
       </div>
-    )
+    );
   }
 
   const handleUnmute = () => {
     try {
       // Try to unmute the Flowplayer instance
       if (window.flowplayerInstance) {
-        window.flowplayerInstance.muted = false
-        window.flowplayerInstance.volume = 1
-        console.log('Unmuted via overlay')
-        setShowUnmuteOverlay(false)
+        window.flowplayerInstance.muted = false;
+        window.flowplayerInstance.volume = 1;
+        console.log("Unmuted via overlay");
+        setShowUnmuteOverlay(false);
       } else {
         // Fallback: try to find and click the player's unmute button
-        const playerElement = document.getElementById('player-46fbbf30-5af9-4860-b4b1-6706ac91984e')
+        const playerElement = document.getElementById(
+          `player-${streamingSettings.playerId}`
+        );
         if (playerElement) {
-          const muteButton = playerElement.querySelector('[data-testid="mute"], .fp-mute, [aria-label*="mute"], [title*="mute"]')
+          const muteButton = playerElement.querySelector(
+            '[data-testid="mute"], .fp-mute, [aria-label*="mute"], [title*="mute"]'
+          );
           if (muteButton) {
-            muteButton.click()
+            (muteButton as HTMLElement).click();
           }
         }
-        setShowUnmuteOverlay(false)
+        setShowUnmuteOverlay(false);
       }
     } catch (error) {
-      console.error('Error unmuting:', error)
-      setShowUnmuteOverlay(false)
+      console.error("Error unmuting:", error);
+      setShowUnmuteOverlay(false);
     }
-  }
+  };
 
   return (
     <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden relative">
-      <div id="player-46fbbf30-5af9-4860-b4b1-6706ac91984e" className="w-full h-full" />
-      
+      <div
+        id={`player-${streamingSettings.playerId}`}
+        className="w-full h-full"
+      />
+
       {/* Unmute Overlay */}
       {showUnmuteOverlay && !isLoading && !error && (
         <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
@@ -200,11 +242,13 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
             <VolumeX className="w-6 h-6" />
             <div className="text-left">
               <div className="font-semibold text-lg">Click to Unmute</div>
-              <div className="text-sm text-gray-600">Stream audio is muted by default</div>
+              <div className="text-sm text-gray-600">
+                Stream audio is muted by default
+              </div>
             </div>
           </button>
         </div>
       )}
     </div>
-  )
+  );
 }

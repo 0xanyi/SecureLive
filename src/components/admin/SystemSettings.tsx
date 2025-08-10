@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Settings, Save, Database, Mail, Shield, Globe, Bell, Users, Loader2 } from 'lucide-react'
+import { Settings, Save, Database, Mail, Shield, Globe, Bell, Users, Loader2, Video } from 'lucide-react'
 
 export function SystemSettings() {
   const [activeTab, setActiveTab] = useState('general')
@@ -16,6 +16,13 @@ export function SystemSettings() {
       timezone: 'Europe/London',
       language: 'en',
       maintenanceMode: false
+    },
+    streaming: {
+      hlsUrl: 'https://cdn3.wowza.com/5/NVF5TVdNQmR5OHRI/cln/smil:clnout.smil/playlist.m3u8',
+      playerId: '46fbbf30-5af9-4860-b4b1-6706ac91984e',
+      playerToken: 'eyJraWQiOiJYMzdESU55UmF6bFEiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJjIjoie1wiYWNsXCI6MzgsXCJpZFwiOlwiWDM3RElOeVJhemxRXCJ9IiwiaXNzIjoiRmxvd3BsYXllciJ9._rtVLPQzfdsbtI4UHrjX1IzwwfGTPQK988D8W0C9sEOrvZEG82i9S4ApbIkxYY5sQwq38h2DWFypXM2d15AYng',
+      autoplay: false,
+      muted: true
     },
     email: {
       brevoApiKey: '',
@@ -41,6 +48,7 @@ export function SystemSettings() {
 
   const tabs = [
     { id: 'general', name: 'General', icon: Settings },
+    { id: 'streaming', name: 'Streaming', icon: Video },
     { id: 'email', name: 'Email', icon: Mail },
     { id: 'security', name: 'Security', icon: Shield },
     { id: 'notifications', name: 'Notifications', icon: Bell }
@@ -63,6 +71,10 @@ export function SystemSettings() {
           general: {
             ...prevSettings.general,
             ...data.settings.general
+          },
+          streaming: {
+            ...prevSettings.streaming,
+            ...data.settings.streaming
           },
           email: {
             ...prevSettings.email,
@@ -248,6 +260,110 @@ export function SystemSettings() {
                       <span className="ml-2 text-sm text-gray-700">Enable Maintenance Mode</span>
                     </label>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Streaming Settings */}
+          {activeTab === 'streaming' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Live Stream Configuration</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Configure your HLS streaming settings and video player options.
+                </p>
+                
+                <div className="grid grid-cols-1 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      HLS Stream URL
+                    </label>
+                    <input
+                      type="url"
+                      value={settings.streaming?.hlsUrl || ''}
+                      onChange={(e) => updateSetting('streaming', 'hlsUrl', e.target.value)}
+                      placeholder="https://your-stream-url.com/playlist.m3u8"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the HLS (.m3u8) URL for your live stream
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Player ID
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.streaming?.playerId || ''}
+                      onChange={(e) => updateSetting('streaming', 'playerId', e.target.value)}
+                      placeholder="player-id-from-your-provider"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Unique identifier for your video player
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Player Token (Optional)
+                    </label>
+                    <textarea
+                      value={settings.streaming?.playerToken || ''}
+                      onChange={(e) => updateSetting('streaming', 'playerToken', e.target.value)}
+                      placeholder="JWT token for authenticated streaming"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      rows={3}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Authentication token if required by your streaming provider
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={settings.streaming?.autoplay || false}
+                          onChange={(e) => updateSetting('streaming', 'autoplay', e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Enable Autoplay</span>
+                      </label>
+                      <p className="text-xs text-gray-500 mt-1 ml-6">
+                        Stream will start playing automatically when loaded
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={settings.streaming?.muted || false}
+                          onChange={(e) => updateSetting('streaming', 'muted', e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Start Muted</span>
+                      </label>
+                      <p className="text-xs text-gray-500 mt-1 ml-6">
+                        Stream will be muted by default (recommended for autoplay)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">Streaming Setup Instructions</h4>
+                  <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                    <li>Obtain your HLS stream URL from your streaming provider</li>
+                    <li>If using Wowza or similar, get your player ID and token</li>
+                    <li>Test the stream URL in a browser to ensure it's working</li>
+                    <li>Save settings and refresh the stream page to see changes</li>
+                  </ol>
                 </div>
               </div>
             </div>

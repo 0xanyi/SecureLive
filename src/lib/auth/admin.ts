@@ -37,6 +37,14 @@ export async function validateAdminSession(): Promise<AdminSessionValidation> {
           name: 'Development Admin',
           password_hash: '',
           role: 'super_admin',
+          permissions: {
+            canManageUsers: true,
+            canManageSettings: true,
+            canManageEvents: true,
+            canGenerateCodes: true,
+            canViewAnalytics: true,
+            canManageEmails: true
+          },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }
@@ -141,4 +149,30 @@ export async function verifyAdminAuth(_request: Request): Promise<AdminAuthResul
       error: 'Authentication verification failed' 
     }
   }
+}
+
+export function hasPermission(user: AdminUser | undefined, permission: keyof AdminUser['permissions']): boolean {
+  if (!user) return false
+  if (user.role === 'super_admin') return true
+  return user.permissions[permission] === true
+}
+
+export async function verifyAdminPermission(
+  request: Request, 
+  permission: keyof AdminUser['permissions']
+): Promise<AdminAuthResult> {
+  const authResult = await verifyAdminAuth(request)
+  
+  if (!authResult.success) {
+    return authResult
+  }
+
+  if (!hasPermission(authResult.user, permission)) {
+    return {
+      success: false,
+      error: 'Insufficient permissions'
+    }
+  }
+
+  return authResult
 }
