@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Play, Volume2, VolumeX, Maximize, Loader2 } from "lucide-react";
+import { Play, VolumeX, Loader2 } from "lucide-react";
+
+// Extend Window interface to include flowplayerInstance
+declare global {
+  interface Window {
+    flowplayerInstance?: any;
+  }
+}
 
 interface VideoPlayerProps {
   sessionId: string;
@@ -11,7 +18,8 @@ interface VideoPlayerProps {
 export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showUnmuteOverlay, setShowUnmuteOverlay] = useState(true);
+  const [showUnmuteOverlay, setShowUnmuteOverlay] = useState(false);
+  const [showPlayOverlay, setShowPlayOverlay] = useState(false);
   const [streamingSettings, setStreamingSettings] = useState({
     hlsUrl:
       "https://cdn3.wowza.com/5/NVF5TVdNQmR5OHRI/cln/smil:clnout.smil/playlist.m3u8",
@@ -74,8 +82,16 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
           setShowUnmuteOverlay(false);
         };
 
+        // Listen for autoplay failure
+        const handleAutoplayFailed = () => {
+          console.log("Autoplay failed, showing play overlay");
+          setShowPlayOverlay(true);
+          setShowUnmuteOverlay(false); // Hide unmute overlay when showing play overlay
+        };
+
         window.addEventListener("flowplayer-ready", handlePlayerReady);
         window.addEventListener("flowplayer-unmuted", handlePlayerUnmuted);
+        window.addEventListener("flowplayer-autoplay-failed", handleAutoplayFailed);
 
         // Create script and add to head immediately
         const script = document.createElement("script");
@@ -96,6 +112,9 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
             }
             
             console.log('Player element found, initializing Flowplayer...');
+            console.log('Streaming settings:', ${JSON.stringify(streamingSettings)});
+            console.log('Autoplay setting:', ${streamingSettings.autoplay});
+            console.log('Muted setting:', ${streamingSettings.muted});
             try {
               const player = flowplayer("#player-${
                 streamingSettings.playerId
@@ -106,8 +125,8 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
                     ? `token: "${streamingSettings.playerToken}",`
                     : ""
                 }
-                autoplay: ${streamingSettings.autoplay},
-                muted: ${streamingSettings.muted}
+                autoplay: ${streamingSettings.autoplay ? 'true' : 'false'},
+                muted: ${streamingSettings.muted ? 'true' : 'false'}
               });
               
               // Hide loading as soon as player is ready
@@ -115,6 +134,32 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
                 player.on('ready', () => {
                   console.log('Player is ready, hiding loading...');
                   window.dispatchEvent(new CustomEvent('flowplayer-ready'));
+                  
+                  // Show unmute overlay if stream is muted (regardless of autoplay)
+                  if (${streamingSettings.muted}) {
+                    setTimeout(() => {
+                      setShowUnmuteOverlay(true);
+                    }, 1000);
+                  }
+                  
+                  // If autoplay is enabled, try to start playback
+                  if (${streamingSettings.autoplay}) {
+                    console.log('Autoplay is enabled, attempting to start playback...');
+                    setTimeout(() => {
+                      try {
+                        player.play().then(() => {
+                          console.log('Autoplay successful');
+                        }).catch((error) => {
+                          console.log('Autoplay failed (likely due to browser policy):', error);
+                          console.log('User interaction will be required to start playback');
+                          window.dispatchEvent(new CustomEvent('flowplayer-autoplay-failed'));
+                        });
+                      } catch (error) {
+                        console.log('Autoplay attempt failed:', error);
+                        window.dispatchEvent(new CustomEvent('flowplayer-autoplay-failed'));
+                      }
+                    }, 500);
+                  }
                 });
                 
                 player.on('loadstart', () => {
@@ -127,6 +172,19 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
                   if (player.muted === false && player.volume > 0) {
                     window.dispatchEvent(new CustomEvent('flowplayer-unmuted'));
                   }
+                });
+                
+                // Debug autoplay events
+                player.on('play', () => {
+                  console.log('Player started playing');
+                });
+                
+                player.on('pause', () => {
+                  console.log('Player paused');
+                });
+                
+                player.on('error', (e) => {
+                  console.error('Player error:', e);
                 });
                 
                 // Store player reference globally for unmute overlay
@@ -156,6 +214,7 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
         return () => {
           window.removeEventListener("flowplayer-ready", handlePlayerReady);
           window.removeEventListener("flowplayer-unmuted", handlePlayerUnmuted);
+          window.removeEventListener("flowplayer-autoplay-failed", handleAutoplayFailed);
         };
       } catch (err) {
         console.error("Failed to initialize Flowplayer:", err);
@@ -225,6 +284,19 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
     }
   };
 
+  const handlePlay = () => {
+    try {
+      if (window.flowplayerInstance) {
+        window.flowplayerInstance.play();
+        console.log("Started playback via overlay");
+        setShowPlayOverlay(false);
+      }
+    } catch (error) {
+      console.error("Error starting playback:", error);
+      setShowPlayOverlay(false);
+    }
+  };
+
   return (
     <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden relative">
       <div
@@ -232,8 +304,26 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
         className="w-full h-full"
       />
 
+      {/* Play Overlay (for autoplay failures) */}
+      {showPlayOverlay && !isLoading && !error && (
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+          <button
+            onClick={handlePlay}
+            className="bg-white/90 hover:bg-white text-gray-900 px-8 py-4 rounded-lg flex items-center gap-3 transition-all duration-200 hover:scale-105 shadow-lg"
+          >
+            <Play className="w-6 h-6" />
+            <div className="text-left">
+              <div className="font-semibold text-lg">Click to Play</div>
+              <div className="text-sm text-gray-600">
+                Autoplay was blocked by your browser
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
+
       {/* Unmute Overlay */}
-      {showUnmuteOverlay && !isLoading && !error && (
+      {showUnmuteOverlay && !showPlayOverlay && !isLoading && !error && (
         <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
           <button
             onClick={handleUnmute}

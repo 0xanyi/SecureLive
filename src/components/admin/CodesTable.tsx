@@ -24,9 +24,9 @@ interface AccessCode {
   is_active: boolean
   created_at: string
   expires_at?: string
-  admin_users: {
+  admin_users?: {
     email: string
-  }
+  } | null
 }
 
 interface CodesTableProps {
@@ -159,7 +159,7 @@ export function CodesTable({ codes }: CodesTableProps) {
                       {formatDate(code.created_at)}
                     </p>
                     <p className="text-xs text-gray-500">
-                      by {code.admin_users.email}
+                      by {code.admin_users?.email || 'Unknown'}
                     </p>
                   </div>
                 </td>
