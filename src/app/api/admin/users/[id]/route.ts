@@ -125,15 +125,22 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Delete user
-    const { error } = await supabase
-      .from('admin_users')
-      .delete()
-      .eq('id', userId)
+    // Use the safe delete function to handle foreign key constraints
+    const { data, error } = await supabase.rpc('delete_admin_user', {
+      user_id: userId
+    })
 
     if (error) {
       console.error('Error deleting admin user:', error)
-      return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 })
+      return NextResponse.json({ 
+        error: error.message || 'Failed to delete user. User may have associated records.' 
+      }, { status: 500 })
+    }
+
+    if (!data) {
+      return NextResponse.json({ 
+        error: 'User not found or could not be deleted' 
+      }, { status: 404 })
     }
 
     return NextResponse.json({
