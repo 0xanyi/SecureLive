@@ -5,10 +5,11 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "build:production": "NODE_ENV=production ESLINT_CONFIG_FILE=.eslintrc.production.json next build",
     "start": "next start",
-    "lint": "next lint",
-    "build:production": "NODE_ENV=production next build",
     "start:production": "NODE_ENV=production next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
     "docker:build": "docker build -t live-streaming-portal .",
     "docker:run": "docker run -p 3000:3000 live-streaming-portal",
     "docker:compose": "docker-compose up -d"
