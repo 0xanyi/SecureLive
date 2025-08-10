@@ -4,9 +4,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Local env files
+# Local env files (keep .env.example)
 .env*.local
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -36,11 +35,16 @@ out/
 # Git
 .git
 .gitignore
-README.md
 
-# Documentation
+# Documentation (keep essential deployment docs)
 docs/
-*.md
+EVENTS_SETUP.md
+EVENTS_IMPLEMENTATION_SUMMARY.md
+QUICK_DATABASE_SETUP.md
+SETUP.md
+ADMIN_SETUP.md
+PROJECT_STATUS.md
+PROJECT_SUMMARY.md
 
 # Test files
 test/
@@ -53,3 +57,6 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+
+# Deployment artifacts
+scripts/
