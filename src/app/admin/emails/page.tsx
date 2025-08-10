@@ -1,4 +1,4 @@
-import { EmailManagement } from '@/components/admin/EmailManagement'
+import { EmailTemplateManagement } from '@/components/admin/EmailTemplateManagement'
 
 export default function EmailsPage() {
   return (
@@ -6,11 +6,11 @@ export default function EmailsPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Email Management</h1>
         <p className="text-gray-600">
-          Send access codes and notifications via email
+          Manage email templates and send notifications
         </p>
       </div>
 
-      <EmailManagement />
+      <EmailTemplateManagement />
     </div>
   )
 }
