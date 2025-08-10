@@ -6,7 +6,12 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build:production": "NODE_ENV=production next build",
+    "start:production": "NODE_ENV=production next start",
+    "docker:build": "docker build -t live-streaming-portal .",
+    "docker:run": "docker run -p 3000:3000 live-streaming-portal",
+    "docker:compose": "docker-compose up -d"
   },
   "dependencies": {
     "@getbrevo/brevo": "^3.0.1",

@@ -196,7 +196,33 @@ npm run type-check
 
 ## 📦 Deployment
 
-### Vercel Deployment
+### Coolify Deployment (Recommended for Self-Hosting)
+
+This application is optimized for deployment on Coolify, a self-hosted deployment platform.
+
+1. **Prepare for deployment**
+   ```bash
+   # All necessary files are included:
+   # - Dockerfile
+   # - docker-compose.yml
+   # - .dockerignore
+   # - Health check endpoint
+   ```
+
+2. **Configure environment variables in Coolify**
+   - Use `.env.production.example` as a template
+   - Set all required variables in Coolify dashboard
+
+3. **Deploy**
+   - Connect your Git repository to Coolify
+   - Configure build settings (Node.js 18+, port 3000)
+   - Deploy and monitor health check endpoint
+
+📋 **See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for complete deployment guide**
+
+📖 **See [coolify-deploy.md](./coolify-deploy.md) for detailed Coolify instructions**
+
+### Alternative: Vercel Deployment
 
 1. Push your code to GitHub
 2. Import the project in Vercel
