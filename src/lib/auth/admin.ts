@@ -25,14 +25,14 @@ export async function validateAdminSession(): Promise<AdminSessionValidation> {
       algorithms: ['HS256'],
     })
 
-    const adminId = (payload.payload as any).adminId
+    const adminId = (payload.payload as { adminId: string }).adminId
 
     // For development mode - return mock admin data
     if (adminId === 'dev-admin-123') {
       return {
         valid: true,
         admin: {
-          id: 'dev-admin-123',
+          id: '00000000-0000-0000-0000-000000000001', // Valid UUID for dev
           email: 'admin@stppl.com',
           name: 'Development Admin',
           password_hash: '',
@@ -111,4 +111,34 @@ export async function authenticateAdmin(email: string, password: string): Promis
 export async function hashPassword(password: string): Promise<string> {
   // Simple hash for demo - in production use bcrypt
   return `hashed_${password}`
+}
+
+export interface AdminAuthResult {
+  success: boolean
+  user?: AdminUser
+  error?: string
+}
+
+export async function verifyAdminAuth(_request: Request): Promise<AdminAuthResult> {
+  try {
+    const adminSession = await validateAdminSession()
+    
+    if (!adminSession.valid) {
+      return { 
+        success: false, 
+        error: adminSession.error || 'Invalid admin session' 
+      }
+    }
+
+    return { 
+      success: true, 
+      user: adminSession.admin 
+    }
+  } catch (error) {
+    console.error('Admin auth verification error:', error)
+    return { 
+      success: false, 
+      error: 'Authentication verification failed' 
+    }
+  }
 }

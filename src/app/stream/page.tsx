@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { validateSession } from '@/lib/auth/session'
 import { VideoPlayer } from '@/components/stream/VideoPlayer'
 import { StreamHeader } from '@/components/stream/StreamHeader'
+import { EventInfo } from '@/components/stream/EventInfo'
 
 
 export default async function StreamPage() {
@@ -35,16 +36,8 @@ export default async function StreamPage() {
 
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Live Status */}
-            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-green-400 font-semibold">Live Stream</span>
-              </div>
-              <p className="text-green-300 text-sm mt-2">
-                Live stream is currently active
-              </p>
-            </div>
+            {/* Event Information */}
+            <EventInfo />
 
             {/* Current Viewing Info */}
             <div className="bg-gray-800 rounded-lg p-6">

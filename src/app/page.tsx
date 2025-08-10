@@ -1,25 +1,16 @@
 import { CodeEntry } from "@/components/auth/CodeEntry";
-import { Logo } from "@/components/ui/Logo";
+import { DynamicHeader } from "@/components/ui/DynamicHeader";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
       <div className="container mx-auto px-4 py-8 flex-1 flex flex-col">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-6">
-            <Logo size="lg" variant="dark" showText={false} />
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-            Secure Live Stream Portal
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-600 mb-2">
-            Professional Live Streaming Access
-          </p>
-        </div>
+        {/* Dynamic Header */}
+        <DynamicHeader />
 
         {/* Main Content */}
         <div className="max-w-md mx-auto">
+          
           {/* Code Entry Form */}
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="text-center mb-6">

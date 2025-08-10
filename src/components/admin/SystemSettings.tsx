@@ -7,6 +7,8 @@ export function SystemSettings() {
   const [activeTab, setActiveTab] = useState('general')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isTestingEmail, setIsTestingEmail] = useState(false)
+  const [testEmailAddress, setTestEmailAddress] = useState('')
   const [settings, setSettings] = useState({
     general: {
       siteName: 'Secure Live Stream Portal',
@@ -16,12 +18,11 @@ export function SystemSettings() {
       maintenanceMode: false
     },
     email: {
-      smtpHost: '',
-      smtpPort: '587',
-      smtpUser: '',
-      smtpPassword: '',
+      brevoApiKey: '',
       fromEmail: 'noreply@example.com',
-      fromName: 'Secure Live Stream Portal'
+      fromName: 'Secure Live Stream Portal',
+      replyToEmail: '',
+      enableEmailNotifications: true
     },
     security: {
       sessionTimeout: '30',
@@ -56,8 +57,26 @@ export function SystemSettings() {
       const response = await fetch('/api/admin/settings')
       const data = await response.json()
       
-      if (data.success) {
-        setSettings(data.settings)
+      if (data.success && data.settings) {
+        // Merge loaded settings with defaults to ensure all properties exist
+        setSettings(prevSettings => ({
+          general: {
+            ...prevSettings.general,
+            ...data.settings.general
+          },
+          email: {
+            ...prevSettings.email,
+            ...data.settings.email
+          },
+          security: {
+            ...prevSettings.security,
+            ...data.settings.security
+          },
+          notifications: {
+            ...prevSettings.notifications,
+            ...data.settings.notifications
+          }
+        }))
       }
     } catch (error) {
       console.error('Error loading settings:', error)
@@ -96,10 +115,44 @@ export function SystemSettings() {
     setSettings(prev => ({
       ...prev,
       [category]: {
-        ...prev[category as keyof typeof prev],
+        ...(prev[category as keyof typeof prev] || {}),
         [key]: value
       }
     }))
+  }
+
+  const handleTestEmail = async () => {
+    if (!testEmailAddress) {
+      alert('Please enter an email address to test')
+      return
+    }
+
+    try {
+      setIsTestingEmail(true)
+      const response = await fetch('/api/admin/test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          testEmail: testEmailAddress,
+          settings: settings.email 
+        }),
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        alert('Test email sent successfully! Check your inbox.')
+      } else {
+        alert('Failed to send test email: ' + data.error)
+      }
+    } catch (error) {
+      console.error('Error sending test email:', error)
+      alert('Error sending test email. Please try again.')
+    } finally {
+      setIsTestingEmail(false)
+    }
   }
 
   if (isLoading) {
@@ -150,7 +203,7 @@ export function SystemSettings() {
                     </label>
                     <input
                       type="text"
-                      value={settings.general.siteName}
+                      value={settings.general?.siteName || ''}
                       onChange={(e) => updateSetting('general', 'siteName', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
@@ -161,7 +214,7 @@ export function SystemSettings() {
                       Timezone
                     </label>
                     <select
-                      value={settings.general.timezone}
+                      value={settings.general?.timezone || 'Europe/London'}
                       onChange={(e) => updateSetting('general', 'timezone', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
@@ -177,7 +230,7 @@ export function SystemSettings() {
                       Site Description
                     </label>
                     <textarea
-                      value={settings.general.siteDescription}
+                      value={settings.general?.siteDescription || ''}
                       onChange={(e) => updateSetting('general', 'siteDescription', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       rows={3}
@@ -188,7 +241,7 @@ export function SystemSettings() {
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={settings.general.maintenanceMode}
+                        checked={settings.general?.maintenanceMode || false}
                         onChange={(e) => updateSetting('general', 'maintenanceMode', e.target.checked)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
@@ -204,42 +257,37 @@ export function SystemSettings() {
           {activeTab === 'email' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Email Configuration</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Brevo Email Configuration</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Configure your Brevo email service settings for sending notifications and access codes.
+                </p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      SMTP Host
+                      Brevo API Key
                     </label>
                     <input
-                      type="text"
-                      value={settings.email.smtpHost}
-                      onChange={(e) => updateSetting('email', 'smtpHost', e.target.value)}
-                      placeholder="smtp.gmail.com"
+                      type="password"
+                      value={settings.email?.brevoApiKey || ''}
+                      onChange={(e) => updateSetting('email', 'brevoApiKey', e.target.value)}
+                      placeholder="Enter your Brevo API key"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Get your API key from your Brevo dashboard under API & Integration
+                    </p>
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      SMTP Port
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.email.smtpPort}
-                      onChange={(e) => updateSetting('email', 'smtpPort', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      From Email
+                      From Email Address
                     </label>
                     <input
                       type="email"
-                      value={settings.email.fromEmail}
+                      value={settings.email?.fromEmail || ''}
                       onChange={(e) => updateSetting('email', 'fromEmail', e.target.value)}
+                      placeholder="noreply@yourdomain.com"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
@@ -250,11 +298,82 @@ export function SystemSettings() {
                     </label>
                     <input
                       type="text"
-                      value={settings.email.fromName}
+                      value={settings.email?.fromName || ''}
                       onChange={(e) => updateSetting('email', 'fromName', e.target.value)}
+                      placeholder="Secure Live Stream Portal"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reply-To Email (Optional)
+                    </label>
+                    <input
+                      type="email"
+                      value={settings.email?.replyToEmail || ''}
+                      onChange={(e) => updateSetting('email', 'replyToEmail', e.target.value)}
+                      placeholder="support@yourdomain.com"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={settings.email?.enableEmailNotifications || false}
+                        onChange={(e) => updateSetting('email', 'enableEmailNotifications', e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Enable Email Notifications</span>
+                    </label>
+                  </div>
+                </div>
+                
+                {/* Test Email Section */}
+                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="text-sm font-medium text-green-900 mb-3">Test Email Configuration</h4>
+                  <p className="text-sm text-green-800 mb-3">
+                    Send a test email to verify your Brevo configuration is working correctly.
+                  </p>
+                  <div className="flex gap-3">
+                    <input
+                      type="email"
+                      value={testEmailAddress}
+                      onChange={(e) => setTestEmailAddress(e.target.value)}
+                      placeholder="Enter email address to test"
+                      className="flex-1 px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                    <button
+                      onClick={handleTestEmail}
+                      disabled={isTestingEmail || !testEmailAddress}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isTestingEmail ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-4 h-4" />
+                          Send Test
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">Brevo Setup Instructions</h4>
+                  <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                    <li>Sign up for a Brevo account at <a href="https://www.brevo.com" target="_blank" rel="noopener noreferrer" className="underline">brevo.com</a></li>
+                    <li>Verify your sender email address in Brevo</li>
+                    <li>Go to API & Integration → API Keys in your Brevo dashboard</li>
+                    <li>Create a new API key and paste it above</li>
+                    <li>Test your configuration by sending a test email</li>
+                  </ol>
                 </div>
               </div>
             </div>
@@ -273,7 +392,7 @@ export function SystemSettings() {
                     </label>
                     <input
                       type="number"
-                      value={settings.security.sessionTimeout}
+                      value={settings.security?.sessionTimeout || '30'}
                       onChange={(e) => updateSetting('security', 'sessionTimeout', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
@@ -285,7 +404,7 @@ export function SystemSettings() {
                     </label>
                     <input
                       type="number"
-                      value={settings.security.maxLoginAttempts}
+                      value={settings.security?.maxLoginAttempts || '5'}
                       onChange={(e) => updateSetting('security', 'maxLoginAttempts', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
@@ -297,7 +416,7 @@ export function SystemSettings() {
                     </label>
                     <input
                       type="text"
-                      value={settings.security.allowedIpRanges}
+                      value={settings.security?.allowedIpRanges || ''}
                       onChange={(e) => updateSetting('security', 'allowedIpRanges', e.target.value)}
                       placeholder="192.168.1.0/24, 10.0.0.0/8"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -308,7 +427,7 @@ export function SystemSettings() {
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={settings.security.requireStrongPasswords}
+                        checked={settings.security?.requireStrongPasswords || false}
                         onChange={(e) => updateSetting('security', 'requireStrongPasswords', e.target.checked)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
@@ -318,7 +437,7 @@ export function SystemSettings() {
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={settings.security.enableTwoFactor}
+                        checked={settings.security?.enableTwoFactor || false}
                         onChange={(e) => updateSetting('security', 'enableTwoFactor', e.target.checked)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
@@ -340,7 +459,7 @@ export function SystemSettings() {
                   <label className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={settings.notifications.emailNotifications}
+                      checked={settings.notifications?.emailNotifications || false}
                       onChange={(e) => updateSetting('notifications', 'emailNotifications', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -350,7 +469,7 @@ export function SystemSettings() {
                   <label className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={settings.notifications.adminAlerts}
+                      checked={settings.notifications?.adminAlerts || false}
                       onChange={(e) => updateSetting('notifications', 'adminAlerts', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -360,7 +479,7 @@ export function SystemSettings() {
                   <label className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={settings.notifications.sessionAlerts}
+                      checked={settings.notifications?.sessionAlerts || false}
                       onChange={(e) => updateSetting('notifications', 'sessionAlerts', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -370,7 +489,7 @@ export function SystemSettings() {
                   <label className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={settings.notifications.errorReporting}
+                      checked={settings.notifications?.errorReporting || false}
                       onChange={(e) => updateSetting('notifications', 'errorReporting', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />

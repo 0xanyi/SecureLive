@@ -9,11 +9,14 @@ import {
   Mail, 
   BarChart3, 
   Users, 
-  Settings 
+  Settings,
+  Calendar
 } from 'lucide-react'
+import { Logo } from '@/components/ui/Logo'
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { name: 'Events', href: '/admin/events', icon: Calendar },
   { name: 'Access Codes', href: '/admin/codes', icon: Ticket },
   { name: 'Email Center', href: '/admin/emails', icon: Mail },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
@@ -23,33 +26,11 @@ const navigation = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
-  const [siteName, setSiteName] = useState('Secure Live Stream Portal')
-  const [siteDescription, setSiteDescription] = useState('Admin Dashboard')
-
-  // Load site settings on component mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const response = await fetch('/api/admin/settings')
-        const data = await response.json()
-        
-        if (data.success && data.settings.general) {
-          setSiteName(data.settings.general.siteName || 'Secure Live Stream Portal')
-          setSiteDescription(data.settings.general.siteDescription || 'Admin Dashboard')
-        }
-      } catch (error) {
-        console.error('Error loading settings for sidebar:', error)
-      }
-    }
-
-    loadSettings()
-  }, [])
 
   return (
     <div className="w-64 bg-white shadow-sm border-r border-gray-200">
-      <div className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900">{siteName.split(' ').slice(0, 2).join(' ')} Admin</h2>
-        <p className="text-sm text-gray-500">{siteDescription}</p>
+      <div className="p-6 flex justify-center">
+        <Logo size="md" variant="dark" showText={false} />
       </div>
       
       <nav className="px-3 pb-6">

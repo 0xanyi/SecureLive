@@ -166,6 +166,41 @@ export interface Database {
           brevo_message_id?: string | null
         }
       }
+      events: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          start_date: string
+          end_date: string
+          is_active: boolean
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          start_date: string
+          end_date: string
+          is_active?: boolean
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          start_date?: string
+          end_date?: string
+          is_active?: boolean
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

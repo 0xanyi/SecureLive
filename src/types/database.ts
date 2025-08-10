@@ -54,6 +54,28 @@ export interface EmailLog {
   brevo_message_id?: string
 }
 
+export interface Event {
+  id: string
+  title: string
+  description?: string
+  start_date: string
+  end_date: string
+  is_active: boolean
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CurrentEvent {
+  id: string
+  title: string
+  description?: string
+  start_date: string
+  end_date: string
+  duration_minutes: number
+  time_remaining_minutes: number
+}
+
 // Database table names
 export type Tables = {
   admin_users: AdminUser
@@ -61,6 +83,7 @@ export type Tables = {
   sessions: Session
   attendance_logs: AttendanceLog
   email_logs: EmailLog
+  events: Event
 }
 
 // API Response types

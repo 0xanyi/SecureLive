@@ -28,6 +28,41 @@ export function formatDate(date: string | Date): string {
   }).format(new Date(date))
 }
 
+export function formatDateTime(date: string | Date): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date(date))
+}
+
+export function formatEventPeriod(startDate: string | Date, endDate: string | Date): string {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  
+  const formatDateWithComma = (date: Date): string => {
+    const weekday = date.toLocaleDateString('en-GB', { weekday: 'long' })
+    const day = date.toLocaleDateString('en-GB', { day: 'numeric' })
+    const month = date.toLocaleDateString('en-GB', { month: 'long' })
+    const year = date.toLocaleDateString('en-GB', { year: '2-digit' })
+    
+    return `${weekday}, ${day} ${month} ${year}`
+  }
+  
+  const startDay = formatDateWithComma(start)
+  const endDay = formatDateWithComma(end)
+  
+  // If same day, just show the day
+  if (start.toDateString() === end.toDateString()) {
+    return startDay
+  }
+  
+  return `${startDay} - ${endDay}`
+}
+
 export function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60

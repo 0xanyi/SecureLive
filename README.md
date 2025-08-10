@@ -9,12 +9,14 @@ Secure Live Stream Portal provides a secure platform for hosting private live st
 ### Key Features
 
 - **🔐 Secure Code-Based Authentication**: Access control via unique, time-limited codes
-- **📊 Real-time Analytics**: Track viewer engagement and session metrics
+- **� Automated Event Management**: Create and manage live streaming events with automatic activation
+- **🎯 Dynamic Event Display**: Login page adapts to show active events in real-time
+- **� Real-time Analytics**: Track viewer engagement and session metrics
 - **👥 Session Management**: Monitor active viewers and manage concurrent sessions
 - **📧 Email Integration**: Automated code distribution via Brevo
 - **🎥 Live Streaming**: Seamless video streaming with custom player
 - **⚡ Real-time Updates**: Live session heartbeat monitoring
-- **🛠️ Admin Dashboard**: Comprehensive admin panel for event management
+- **🛠️ Admin Dashboard**: Comprehensive admin panel for event and access code management
 
 ## 🚀 Tech Stack
 
@@ -35,51 +37,57 @@ Secure Live Stream Portal provides a secure platform for hosting private live st
 ## 🛠️ Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd secure-live-stream-portal
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
-   
+
    Copy the example environment file:
+
    ```bash
    cp .env.example .env.local
    ```
-   
+
    Update `.env.local` with your credentials:
+
    ```env
    # Supabase
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-   
+
    # Brevo Email
    BREVO_API_KEY=your_brevo_api_key
    BREVO_SENDER_EMAIL=your_sender_email
    BREVO_SENDER_NAME=your_sender_name
-   
+
    # Admin Authentication
    ADMIN_USERNAME=your_admin_username
    ADMIN_PASSWORD=your_admin_password
-   
+
    # Application
    NEXT_PUBLIC_APP_URL=http://localhost:3000
    ```
 
 4. **Set up the database**
-   
+
    Run the SQL schema in your Supabase project:
+
    ```bash
    # Use the supabase-schema.sql file in the project root
    ```
 
 5. **Run the development server**
+
    ```bash
    npm run dev
    ```
@@ -93,21 +101,34 @@ secure-live-stream-portal/
 ├── src/
 │   ├── app/                 # Next.js app router pages
 │   │   ├── admin/           # Admin dashboard pages
+│   │   │   ├── events/      # Events management
+│   │   │   ├── codes/       # Access codes management
+│   │   │   ├── analytics/   # Analytics dashboard
+│   │   │   └── sessions/    # Session management
 │   │   ├── api/             # API routes
+│   │   │   ├── admin/       # Admin API endpoints
+│   │   │   │   └── events/  # Events CRUD operations
+│   │   │   └── events/      # Public events API
 │   │   ├── login/           # User login page
 │   │   └── stream/          # Streaming page
 │   ├── components/          # React components
 │   │   ├── admin/           # Admin-specific components
+│   │   │   └── EventsManagement.tsx  # Events admin interface
 │   │   ├── auth/            # Authentication components
 │   │   ├── stream/          # Streaming components
+│   │   │   └── EventInfo.tsx  # Event info sidebar
 │   │   └── ui/              # Shared UI components
+│   │       ├── DynamicHeader.tsx  # Dynamic login header
+│   │       └── CurrentEvent.tsx   # Event banner component
 │   ├── lib/                 # Utility functions and configurations
 │   │   ├── auth/            # Authentication utilities
 │   │   ├── email/           # Email service integration
-│   │   └── supabase/        # Supabase client configuration
+│   │   ├── supabase/        # Supabase client configuration
+│   │   └── utils.ts         # Utility functions (date formatting, etc.)
 │   └── types/               # TypeScript type definitions
 ├── docs/                    # Documentation
-├── migrations/              # Database migrations
+├── supabase-schema.sql      # Complete database schema
+├── missing-tables.sql       # Additional tables for existing setups
 └── public/                  # Static assets
 ```
 
@@ -116,12 +137,26 @@ secure-live-stream-portal/
 ### Database Setup
 
 The application requires the following database tables:
-- `access_codes` - Stores authentication codes
-- `sessions` - Manages active user sessions
-- `analytics` - Tracks user engagement metrics
-- `system_settings` - Stores application configuration
 
-See `supabase-schema.sql` for the complete schema.
+- `admin_users` - Admin authentication and user management
+- `access_codes` - Stores authentication codes for centers and individuals
+- `sessions` - Manages active user sessions with heartbeat monitoring
+- `attendance_logs` - Daily attendance tracking and session duration
+- `email_logs` - Email sending history and status tracking
+- `system_settings` - Stores application configuration
+- `events` - **NEW**: Live streaming events with automatic scheduling
+
+#### Events System
+
+The events system provides:
+
+- **Automated Event Management**: Events automatically go live based on start/end dates
+- **Real-time Status Updates**: Live, Upcoming, and Past event tracking
+- **Dynamic User Interface**: Login page adapts to show active events
+- **Event Progress Tracking**: Visual progress indicators and time calculations
+- **Professional Date Formatting**: Clean, readable date ranges
+
+See `supabase-schema.sql` for the complete schema, or use `missing-tables.sql` to add events to existing setups.
 
 ### Admin Access
 
@@ -129,10 +164,22 @@ Access the admin dashboard at `/admin` using the credentials set in your environ
 
 ## 📚 Documentation
 
+- [Events Setup Guide](./EVENTS_SETUP.md) - Complete events feature documentation
+- [Events Implementation Summary](./EVENTS_IMPLEMENTATION_SUMMARY.md) - Technical implementation details
+- [Quick Database Setup](./QUICK_DATABASE_SETUP.md) - Database setup troubleshooting
 - [Setup Guide](./SETUP.md) - Detailed setup instructions
 - [Admin Setup](./ADMIN_SETUP.md) - Admin dashboard configuration
 - [Architecture Plan](./docs/architecture-plan.md) - System architecture overview
 - [Project Status](./PROJECT_STATUS.md) - Current development status
+
+### Events Feature Documentation
+
+The events system is fully documented with:
+
+- **Setup Instructions**: Step-by-step database and feature setup
+- **Usage Guide**: How to create and manage events
+- **Technical Details**: API endpoints, database schema, and component architecture
+- **Troubleshooting**: Common issues and solutions
 
 ## 🧪 Testing
 
@@ -160,12 +207,38 @@ The application includes a `vercel.json` configuration file for optimal deployme
 
 ## 🔐 Security Features
 
-- Secure code-based authentication
-- Session management with heartbeat monitoring
-- Rate limiting on authentication endpoints
-- Secure admin panel with separate authentication
-- Environment variable protection for sensitive data
-- SQL injection prevention via parameterized queries
+- **Secure Code-Based Authentication**: Unique access codes for centers and individuals
+- **Session Management**: Heartbeat monitoring with automatic cleanup
+- **Admin Authentication**: Separate admin login with JWT-based sessions
+- **Database Security**: Row Level Security (RLS) policies and parameterized queries
+- **Environment Protection**: Sensitive data secured via environment variables
+- **Rate Limiting**: Protection against brute force attacks
+- **Automated Event Security**: Events automatically activate/deactivate based on dates
+
+## 🎯 Events System Features
+
+### For Administrators
+
+- **Event Creation**: Simple form-based event creation with title, description, and dates
+- **Automated Scheduling**: Events automatically go live and end based on configured dates
+- **Real-time Status**: Live dashboard showing current event status and details
+- **Event Management**: Full CRUD operations with professional admin interface
+- **Date Validation**: Automatic validation ensuring end dates are after start dates
+
+### For Users
+
+- **Dynamic Login Experience**: Login page adapts to show active events
+- **Event Information**: Clear event details with professional date formatting
+- **Stream Integration**: Event information displayed in streaming interface
+- **Real-time Updates**: Event status updates automatically every minute
+
+### Technical Features
+
+- **Automatic Activation**: No manual intervention required for event lifecycle
+- **Professional Date Formatting**: "Sunday, 10 August 25 - Monday, 18 August 25" format
+- **Real-time Calculations**: Live progress tracking and time remaining calculations
+- **Database Functions**: PostgreSQL functions for efficient event queries
+- **API Endpoints**: RESTful API for both admin and public event access
 
 ## 🤝 Contributing
 
