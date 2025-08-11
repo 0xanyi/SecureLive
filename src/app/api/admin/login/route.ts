@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSession } from '@/lib/auth/admin'
+import { createServiceClient } from '@/lib/supabase/server'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
@@ -13,20 +14,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // For development/testing - check against default admin credentials
-    // In production, this should query the database
-    const defaultAdminEmail = 'admin@stppl.com'
-    const defaultAdminPassword = 'admin123'
+    // Query the database for the admin user using service role
+    const supabase = await createServiceClient()
+    const { data: admin, error } = await supabase
+      .from('admin_users')
+      .select('*')
+      .eq('email', email.toLowerCase())
+      .single()
 
-    if (email.toLowerCase() !== defaultAdminEmail) {
+    if (error || !admin) {
       return NextResponse.json(
         { message: 'Invalid credentials' },
         { status: 401 }
       )
     }
 
-    // Verify password
-    const isValidPassword = password === defaultAdminPassword
+    // Verify password using bcrypt
+    const isValidPassword = await bcrypt.compare(password, admin.password_hash)
 
     if (!isValidPassword) {
       return NextResponse.json(
@@ -35,20 +39,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create a mock admin ID for development
-    const mockAdminId = 'dev-admin-123'
+    // Update last login
+    await supabase
+      .from('admin_users')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', admin.id)
 
     // Create session
-    const sessionToken = await createAdminSession(mockAdminId)
+    const sessionToken = await createAdminSession(admin.id)
 
     // Set cookie
     const response = NextResponse.json(
       { 
         message: 'Login successful', 
         admin: { 
-          id: mockAdminId, 
-          email: defaultAdminEmail, 
-          name: 'Development Admin' 
+          id: admin.id, 
+          email: admin.email, 
+          name: admin.name,
+          role: admin.role
         } 
       },
       { status: 200 }

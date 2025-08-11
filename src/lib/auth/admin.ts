@@ -1,10 +1,51 @@
 import { cookies } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { SignJWT, jwtVerify } from 'jose'
 import type { AdminUser } from '@/types/database'
 
 const secretKey = process.env.JWT_SECRET
 const key = new TextEncoder().encode(secretKey)
+
+function getPermissionsForRole(role: string) {
+  switch (role) {
+    case 'super_admin':
+      return {
+        canManageUsers: true,
+        canManageSettings: true,
+        canManageEvents: true,
+        canGenerateCodes: true,
+        canViewAnalytics: true,
+        canManageEmails: true
+      }
+    case 'admin':
+      return {
+        canManageUsers: false,
+        canManageSettings: false,
+        canManageEvents: true,
+        canGenerateCodes: true,
+        canViewAnalytics: true,
+        canManageEmails: true
+      }
+    case 'code_generator':
+      return {
+        canManageUsers: false,
+        canManageSettings: false,
+        canManageEvents: false,
+        canGenerateCodes: true,
+        canViewAnalytics: false,
+        canManageEmails: false
+      }
+    default:
+      return {
+        canManageUsers: false,
+        canManageSettings: false,
+        canManageEvents: false,
+        canGenerateCodes: false,
+        canViewAnalytics: false,
+        canManageEmails: false
+      }
+  }
+}
 
 export interface AdminSessionValidation {
   valid: boolean
@@ -27,32 +68,8 @@ export async function validateAdminSession(): Promise<AdminSessionValidation> {
 
     const adminId = (payload.payload as { adminId: string }).adminId
 
-    // For development mode - return mock admin data
-    if (adminId === 'dev-admin-123') {
-      return {
-        valid: true,
-        admin: {
-          id: '00000000-0000-0000-0000-000000000001', // Valid UUID for dev
-          email: 'admin@stppl.com',
-          name: 'Development Admin',
-          password_hash: '',
-          role: 'super_admin',
-          permissions: {
-            canManageUsers: true,
-            canManageSettings: true,
-            canManageEvents: true,
-            canGenerateCodes: true,
-            canViewAnalytics: true,
-            canManageEmails: true
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-      }
-    }
-
-    // For production mode - query database
-    const supabase = await createClient()
+    // Query database for admin user
+    const supabase = await createServiceClient()
     const { data: admin, error } = await supabase
       .from('admin_users')
       .select('*')
@@ -63,7 +80,13 @@ export async function validateAdminSession(): Promise<AdminSessionValidation> {
       return { valid: false, error: 'Admin not found' }
     }
 
-    return { valid: true, admin }
+    // Add permissions based on role
+    const adminWithPermissions = {
+      ...admin,
+      permissions: getPermissionsForRole(admin.role)
+    }
+
+    return { valid: true, admin: adminWithPermissions }
   } catch (error) {
     console.error('Admin session validation error:', error)
     return { valid: false, error: 'Invalid session' }
@@ -94,7 +117,8 @@ export async function deleteAdminSession() {
 }
 
 export async function authenticateAdmin(email: string, password: string): Promise<AdminUser | null> {
-  const supabase = await createClient()
+  const bcrypt = require('bcryptjs')
+  const supabase = await createServiceClient()
   
   const { data: admin, error } = await supabase
     .from('admin_users')
@@ -106,14 +130,18 @@ export async function authenticateAdmin(email: string, password: string): Promis
     return null
   }
 
-  // Simple password check for demo - in production use bcrypt
-  const isValidPassword = password === 'admin123' && admin.email === 'admin@stppl.com'
+  // Verify password using bcrypt
+  const isValidPassword = await bcrypt.compare(password, admin.password_hash)
   
   if (!isValidPassword) {
     return null
   }
 
-  return admin
+  // Add permissions based on role
+  return {
+    ...admin,
+    permissions: getPermissionsForRole(admin.role)
+  }
 }
 
 export async function hashPassword(password: string): Promise<string> {
