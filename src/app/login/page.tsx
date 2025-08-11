@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function AdminLoginPage() {
       } else {
         setError(result.message || "Invalid credentials");
       }
-    } catch (err) {
+    } catch {
       setError("Connection error. Please try again.");
     } finally {
       setIsLoading(false);
@@ -43,13 +44,29 @@ export default function AdminLoginPage() {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <div className="w-8 h-8 text-white">🔒</div>
+          {/* Logo */}
+          <div className="w-20 h-20 mx-auto mb-6">
+            <div className="w-full h-full bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg">
+              <svg
+                className="w-10 h-10 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin Login</h1>
-          <p className="text-gray-600 mt-2">
-            STPPL UK & Europe Event Management
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          SecureLive Admin Portal
+          </h1>
+          <p className="text-gray-600 text-lg">Professional Live Streaming Access</p>
+         
         </div>
 
         {/* Login Form */}
@@ -115,12 +132,12 @@ export default function AdminLoginPage() {
 
         {/* Footer */}
         <div className="text-center mt-6">
-          <a
+          <Link
             href="/"
             className="text-blue-600 hover:text-blue-800 text-sm underline"
           >
             ← Back to Event Stream
-          </a>
+          </Link>
         </div>
       </div>
     </div>

@@ -12,7 +12,7 @@ interface AdminHeaderProps {
 export function AdminHeader({ admin }: AdminHeaderProps) {
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const [siteName, setSiteName] = useState('Secure Live Stream Portal')
+  const [siteName, setSiteName] = useState('SecureLive Stream Portal')
   const [siteDescription, setSiteDescription] = useState('Admin Dashboard')
 
   // Load site settings on component mount
@@ -23,7 +23,7 @@ export function AdminHeader({ admin }: AdminHeaderProps) {
         const data = await response.json()
         
         if (data.success && data.settings.general) {
-          setSiteName(data.settings.general.siteName || 'Secure Live Stream Portal')
+          setSiteName(data.settings.general.siteName || 'SecureLive Stream Portal')
           setSiteDescription(data.settings.general.siteDescription || 'Admin Dashboard')
         }
       } catch (error) {

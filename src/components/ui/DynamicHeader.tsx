@@ -40,7 +40,7 @@ export function DynamicHeader() {
           <Logo size="lg" variant="dark" showText={false} />
         </div>
         <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-          Secure Live Stream Portal
+          SecureLive Stream Portal
         </h1>
         <p className="text-xl md:text-2xl text-gray-600 mb-2">
           Professional Live Streaming Access
@@ -80,7 +80,7 @@ export function DynamicHeader() {
         // Show default platform information
         <>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-            Secure Live Stream Portal
+            SecureLive Stream Portal
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-2">
             Professional Live Streaming Access
