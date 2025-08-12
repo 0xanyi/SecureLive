@@ -22,7 +22,8 @@ export function SystemSettings() {
       playerId: '46fbbf30-5af9-4860-b4b1-6706ac91984e',
       playerToken: 'eyJraWQiOiJYMzdESU55UmF6bFEiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJjIjoie1wiYWNsXCI6MzgsXCJpZFwiOlwiWDM3RElOeVJhemxRXCJ9IiwiaXNzIjoiRmxvd3BsYXllciJ9._rtVLPQzfdsbtI4UHrjX1IzwwfGTPQK988D8W0C9sEOrvZEG82i9S4ApbIkxYY5sQwq38h2DWFypXM2d15AYng',
       autoplay: false,
-      muted: true
+      muted: true,
+      posterImage: ''
     },
     email: {
       brevoApiKey: '',
@@ -323,36 +324,44 @@ export function SystemSettings() {
                     </p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={settings.streaming?.autoplay || false}
-                          onChange={(e) => updateSetting('streaming', 'autoplay', e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">Enable Autoplay</span>
-                      </label>
-                      <p className="text-xs text-gray-500 mt-1 ml-6">
-                        Stream will start playing automatically when loaded
+                  {/* Poster Image Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Poster Image
+                    </label>
+                    <div className="space-y-3">
+                      <input
+                        type="url"
+                        value={settings.streaming?.posterImage || ''}
+                        onChange={(e) => updateSetting('streaming', 'posterImage', e.target.value)}
+                        placeholder="https://your-domain.com/poster-image.jpg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500">
+                        URL to an image that will be displayed before the video starts playing. Recommended size: 1920x1080px
                       </p>
+                      {settings.streaming?.posterImage && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-600 mb-2">Preview:</p>
+                          <img 
+                            src={settings.streaming.posterImage} 
+                            alt="Poster preview" 
+                            className="max-w-xs h-auto rounded border border-gray-300"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
-                    
-                    <div>
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={settings.streaming?.muted || false}
-                          onChange={(e) => updateSetting('streaming', 'muted', e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">Start Muted</span>
-                      </label>
-                      <p className="text-xs text-gray-500 mt-1 ml-6">
-                        Stream will be muted by default (recommended for autoplay)
-                      </p>
-                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 className="text-sm font-medium text-green-900 mb-2">Player Behavior</h4>
+                    <p className="text-sm text-green-800">
+                      The player is configured for optimal user experience: shows poster image with play button, 
+                      starts with audio enabled when user clicks play. No autoplay to avoid browser blocking.
+                    </p>
                   </div>
                 </div>
                 
