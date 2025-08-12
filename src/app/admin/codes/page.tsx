@@ -7,12 +7,12 @@ import Link from 'next/link'
 export default async function CodesPage() {
   const supabase = await createServiceClient()
 
-  // Fetch access codes with creator info
+  // Fetch access codes with creator info (using left join to include codes with null created_by)
   const { data: codes, error } = await supabase
     .from('access_codes')
     .select(`
       *,
-      admin_users!access_codes_created_by_fkey (email)
+      admin_users (email)
     `)
     .order('created_at', { ascending: false })
 
