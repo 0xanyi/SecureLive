@@ -22,7 +22,7 @@ export function VideoPlayer({ sessionId, embedCode }: VideoPlayerProps) {
 
   const [streamingSettings, setStreamingSettings] = useState({
     hlsUrl:
-      "https://cdn3.wowza.com/5/NVF5TVdNQmR5OHRI/cln/smil:clnout.smil/playlist.m3u8",
+      "https://cdn3.wowza.com/5/czJVZ2VkUjllaVQx/SecureLive/smil:out.smil/playlist.m3u8",
     playerId: "46fbbf30-5af9-4860-b4b1-6706ac91984e",
     playerToken:
       "eyJraWQiOiJYMzdESU55UmF6bFEiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJjIjoie1wiYWNsXCI6MzgsXCJpZFwiOlwiWDM3RElOeVJhemxRXCJ9IiwiaXNzIjoiRmxvd3BsYXllciJ9._rtVLPQzfdsbtI4UHrjX1IzwwfGTPQK988D8W0C9sEOrvZEG82i9S4ApbIkxYY5sQwq38h2DWFypXM2d15AYng",

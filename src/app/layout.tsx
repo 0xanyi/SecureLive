@@ -14,9 +14,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "SecureLive Stream Portal",
-  description: "Professional live streaming platform with secure access control",
+  description:
+    "Professional live streaming platform with secure access control",
   icons: {
-    icon: '/favicon.svg',
+    icon: "/favicon.svg",
   },
 };
 
