@@ -86,7 +86,7 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="admin@stppl.com"
+                placeholder="Admin Email"
                 disabled={isLoading}
                 required
               />
