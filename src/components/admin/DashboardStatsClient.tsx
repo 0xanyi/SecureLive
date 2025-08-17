@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Ticket, Users, Activity, TrendingUp, Loader2, AlertCircle } from 'lucide-react'
+import { Ticket, Users, Activity, TrendingUp, Loader2, AlertCircle, UserCheck, AlertTriangle } from 'lucide-react'
 
 interface StatsData {
   totalCodes: number
@@ -9,6 +9,9 @@ interface StatsData {
   totalSessions: number
   activeSessions: number
   todayAttendance: number
+  bulkCodes: number
+  activeBulkCodes: number
+  nearCapacityBulkCodes: number
 }
 
 export function DashboardStatsClient() {
@@ -43,6 +46,10 @@ export function DashboardStatsClient() {
     }
 
     fetchStats()
+    
+    // Set up auto-refresh every 60 seconds
+    const interval = setInterval(fetchStats, 60000)
+    return () => clearInterval(interval)
   }, [])
 
   const statCards = [
@@ -80,6 +87,24 @@ export function DashboardStatsClient() {
     },
   ]
 
+  const bulkCodeCards = [
+    {
+      title: 'Bulk Codes',
+      value: stats?.bulkCodes || 0,
+      icon: UserCheck,
+      color: 'bg-indigo-500',
+      subtitle: `${stats?.activeBulkCodes || 0} active`,
+    },
+    {
+      title: 'Near Capacity',
+      value: stats?.nearCapacityBulkCodes || 0,
+      icon: AlertTriangle,
+      color: stats?.nearCapacityBulkCodes ? 'bg-amber-500' : 'bg-gray-400',
+      subtitle: '≥80% capacity',
+      alert: (stats?.nearCapacityBulkCodes || 0) > 0,
+    },
+  ]
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -113,7 +138,8 @@ export function DashboardStatsClient() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Main Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat) => (
           <div
@@ -147,6 +173,45 @@ export function DashboardStatsClient() {
           </div>
         ))}
       </div>
+
+      {/* Bulk Code Stats */}
+      {(stats?.bulkCodes || 0) > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Bulk Access Codes</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {bulkCodeCards.map((stat) => (
+              <div
+                key={stat.title}
+                className={`bg-white rounded-lg shadow-sm border p-6 ${
+                  stat.alert ? 'border-amber-200 bg-amber-50' : 'border-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">
+                      {stat.value.toLocaleString()}
+                    </p>
+                    {stat.subtitle && (
+                      <p className="text-sm text-gray-500 mt-1">{stat.subtitle}</p>
+                    )}
+                  </div>
+                  <div className={`p-3 rounded-lg ${stat.color}`}>
+                    <stat.icon className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                
+                {stat.alert && (
+                  <div className="mt-4 flex items-center gap-2 text-amber-700">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Attention needed</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Debug info for troubleshooting */}
       {debugInfo && (

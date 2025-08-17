@@ -8,12 +8,13 @@ import { generateRandomCode } from '@/lib/utils'
 import { Loader2, Plus, Download, Mail } from 'lucide-react'
 
 const codeGenerationSchema = z.object({
-  type: z.enum(['center', 'individual']),
+  type: z.enum(['center', 'individual', 'bulk']),
   count: z.number().min(1).max(100),
   prefix: z.string().min(1).max(10),
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Valid email is required').optional().or(z.literal('')),
   maxSessions: z.number().min(1).max(10),
+  maxUsageCount: z.number().min(1).max(400).optional(),
   expiresAt: z.string().optional(),
   sendEmail: z.boolean(),
 }).refine((data) => {
@@ -25,16 +26,26 @@ const codeGenerationSchema = z.object({
 }, {
   message: "Email is required when 'Send codes via email' is checked",
   path: ["email"]
+}).refine((data) => {
+  // If type is bulk, maxUsageCount is required
+  if (data.type === 'bulk' && !data.maxUsageCount) {
+    return false
+  }
+  return true
+}, {
+  message: "Capacity is required for bulk codes",
+  path: ["maxUsageCount"]
 })
 
 type CodeGenerationData = z.infer<typeof codeGenerationSchema>
 
 interface GeneratedCode {
   code: string
-  type: 'center' | 'individual'
+  type: 'center' | 'individual' | 'bulk'
   name: string
   email?: string
   max_concurrent_sessions: number
+  max_usage_count?: number
   expires_at?: string
 }
 
@@ -58,12 +69,14 @@ export function CodeGenerator() {
       name: '',
       email: '',
       maxSessions: 1,
+      maxUsageCount: 50,
       sendEmail: false,
     },
   })
 
   const watchType = watch('type')
   const watchCount = watch('count')
+  const watchMaxUsageCount = watch('maxUsageCount')
 
   const onSubmit = async (data: CodeGenerationData) => {
     setIsGenerating(true)
@@ -72,13 +85,22 @@ export function CodeGenerator() {
       // Generate codes locally first
       const codes: GeneratedCode[] = []
       for (let i = 0; i < data.count; i++) {
+        // For bulk codes, automatically set 24-hour expiration
+        let expiresAt = data.expiresAt
+        if (data.type === 'bulk') {
+          const now = new Date()
+          now.setHours(now.getHours() + 24)
+          expiresAt = now.toISOString()
+        }
+
         codes.push({
           code: `${data.prefix}-${generateRandomCode()}`,
           type: data.type,
           name: data.count === 1 ? data.name : `${data.name} ${i + 1}`,
           email: data.email || undefined,
           max_concurrent_sessions: data.type === 'center' ? 1 : data.maxSessions,
-          expires_at: data.expiresAt || undefined,
+          max_usage_count: data.type === 'bulk' ? data.maxUsageCount : undefined,
+          expires_at: expiresAt || undefined,
         })
       }
 
@@ -111,9 +133,9 @@ export function CodeGenerator() {
 
   const downloadCodes = () => {
     const csv = [
-      'Code,Type,Name,Email,Max Sessions,Expires At',
+      'Code,Type,Name,Email,Max Sessions,Max Usage Count,Expires At',
       ...generatedCodes.map(code => 
-        `${code.code},${code.type},${code.name},${code.email || ''},${code.max_concurrent_sessions},${code.expires_at || ''}`
+        `${code.code},${code.type},${code.name},${code.email || ''},${code.max_concurrent_sessions},${code.max_usage_count || ''},${code.expires_at || ''}`
       )
     ].join('\n')
 
@@ -153,12 +175,20 @@ export function CodeGenerator() {
                     <span className="ml-2 text-sm text-gray-500 capitalize">({code.type})</span>
                   </div>
                   <span className="text-sm text-gray-600">
-                    {code.max_concurrent_sessions} session{code.max_concurrent_sessions > 1 ? 's' : ''}
+                    {code.type === 'bulk' 
+                      ? `${code.max_usage_count} users max`
+                      : `${code.max_concurrent_sessions} session${code.max_concurrent_sessions > 1 ? 's' : ''}`
+                    }
                   </span>
                 </div>
                 <div className="text-sm text-gray-700">
                   <p className="font-medium">{code.name}</p>
                   {code.email && <p className="text-gray-500">{code.email}</p>}
+                  {code.type === 'bulk' && code.expires_at && (
+                    <p className="text-orange-600 text-xs mt-1">
+                      Expires: {new Date(code.expires_at).toLocaleString()}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -198,7 +228,7 @@ export function CodeGenerator() {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Code Type
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
               <input
                 {...register('type')}
@@ -221,6 +251,18 @@ export function CodeGenerator() {
               <div>
                 <p className="font-medium">Individual Code</p>
                 <p className="text-sm text-gray-500">Multiple sessions</p>
+              </div>
+            </label>
+            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+              <input
+                {...register('type')}
+                type="radio"
+                value="bulk"
+                className="mr-3"
+              />
+              <div>
+                <p className="font-medium">Bulk Code</p>
+                <p className="text-sm text-gray-500">Up to 400 users</p>
               </div>
             </label>
           </div>
@@ -315,16 +357,49 @@ export function CodeGenerator() {
           </div>
         )}
 
+        {/* Capacity (for bulk codes) */}
+        {watchType === 'bulk' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Capacity *
+            </label>
+            <input
+              {...register('maxUsageCount', { valueAsNumber: true })}
+              type="number"
+              min="1"
+              max="400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.maxUsageCount && (
+              <p className="text-red-600 text-sm mt-1">{errors.maxUsageCount.message}</p>
+            )}
+            <p className="text-sm text-gray-500 mt-1">
+              Maximum number of users who can use this bulk code (1-400)
+            </p>
+          </div>
+        )}
+
         {/* Expiration Date */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Expiration Date (Optional)
+            Expiration Date {watchType === 'bulk' ? '' : '(Optional)'}
           </label>
-          <input
-            {...register('expiresAt')}
-            type="datetime-local"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          {watchType === 'bulk' ? (
+            <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700">
+              Automatically expires in 24 hours
+            </div>
+          ) : (
+            <input
+              {...register('expiresAt')}
+              type="datetime-local"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          )}
+          {watchType === 'bulk' && (
+            <p className="text-sm text-gray-500 mt-1">
+              Bulk codes automatically expire 24 hours after creation for security
+            </p>
+          )}
         </div>
 
         {/* Send Email Option */}

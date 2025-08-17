@@ -12,16 +12,21 @@ import {
   Edit, 
   Trash2,
   CheckCircle,
-  XCircle
+  XCircle,
+  UserCheck,
+  Clock,
+  AlertTriangle
 } from 'lucide-react'
 
 interface AccessCode {
   id: string
   code: string
-  type: 'center' | 'individual'
+  type: 'center' | 'individual' | 'bulk'
   name: string
   email?: string
   max_concurrent_sessions: number
+  usage_count?: number
+  max_usage_count?: number
   is_active: boolean
   created_at: string
   expires_at?: string
@@ -65,6 +70,7 @@ export function CodesTable({ codes }: CodesTableProps) {
           name: updatedCode.name,
           email: updatedCode.email,
           max_concurrent_sessions: updatedCode.max_concurrent_sessions,
+          max_usage_count: updatedCode.max_usage_count,
           is_active: updatedCode.is_active,
           expires_at: updatedCode.expires_at
         }),
@@ -143,19 +149,39 @@ export function CodesTable({ codes }: CodesTableProps) {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Max Concurrent Sessions
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={editingCode.max_concurrent_sessions}
-                    onChange={(e) => setEditingCode({ ...editingCode, max_concurrent_sessions: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
+                {editingCode.type === 'bulk' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Max Usage Count
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="400"
+                      value={editingCode.max_usage_count || 1}
+                      onChange={(e) => setEditingCode({ ...editingCode, max_usage_count: parseInt(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Current usage: {editingCode.usage_count || 0}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Max Concurrent Sessions
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={editingCode.max_concurrent_sessions}
+                      onChange={(e) => setEditingCode({ ...editingCode, max_concurrent_sessions: parseInt(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                )}
                 
                 <div className="flex items-center">
                   <input
@@ -224,10 +250,14 @@ export function CodesTable({ codes }: CodesTableProps) {
                     <div className={`p-2 rounded-lg ${
                       code.type === 'center' 
                         ? 'bg-blue-100 text-blue-600' 
+                        : code.type === 'bulk'
+                        ? 'bg-indigo-100 text-indigo-600'
                         : 'bg-green-100 text-green-600'
                     }`}>
                       {code.type === 'center' ? (
                         <Building2 className="w-4 h-4" />
+                      ) : code.type === 'bulk' ? (
+                        <UserCheck className="w-4 h-4" />
                       ) : (
                         <User className="w-4 h-4" />
                       )}
@@ -268,12 +298,34 @@ export function CodesTable({ codes }: CodesTableProps) {
                 </td>
                 
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-900">
-                    {code.max_concurrent_sessions === 1 
-                      ? 'Single session' 
-                      : `Up to ${code.max_concurrent_sessions}`
-                    }
-                  </span>
+                  {code.type === 'bulk' ? (
+                    <div>
+                      <div className="text-sm text-gray-900">
+                        {code.usage_count || 0} / {code.max_usage_count || 0}
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                        <div
+                          className={`h-1.5 rounded-full transition-all duration-300 ${
+                            ((code.usage_count || 0) / (code.max_usage_count || 1)) >= 1
+                              ? 'bg-red-500'
+                              : ((code.usage_count || 0) / (code.max_usage_count || 1)) >= 0.8
+                              ? 'bg-amber-500'
+                              : 'bg-green-500'
+                          }`}
+                          style={{ 
+                            width: `${Math.min(((code.usage_count || 0) / (code.max_usage_count || 1)) * 100, 100)}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-900">
+                      {code.max_concurrent_sessions === 1 
+                        ? 'Single session' 
+                        : `Up to ${code.max_concurrent_sessions}`
+                      }
+                    </span>
+                  )}
                 </td>
                 
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -289,11 +341,22 @@ export function CodesTable({ codes }: CodesTableProps) {
                         <span className="text-sm text-red-600 font-medium">Inactive</span>
                       </>
                     )}
+                    
+                    {/* Bulk code capacity warning */}
+                    {code.type === 'bulk' && code.is_active && (
+                      ((code.usage_count || 0) / (code.max_usage_count || 1)) >= 0.8 && (
+                        <AlertTriangle className="w-3 h-3 text-amber-500" />
+                      )
+                    )}
                   </div>
+                  
                   {code.expires_at && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Expires: {formatDate(code.expires_at)}
-                    </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Clock className="w-3 h-3 text-gray-400" />
+                      <p className="text-xs text-gray-500">
+                        Expires: {formatDate(code.expires_at)}
+                      </p>
+                    </div>
                   )}
                 </td>
                 

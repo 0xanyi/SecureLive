@@ -10,6 +10,11 @@
     "start:production": "NODE_ENV=production next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
+    "test:db": "node tests/run-database-tests.js",
+    "verify:db": "node tests/verify-functions.js",
+    "test:bulk-integration": "node tests/bulk-code-integration-tests.js",
+    "test:bulk-api": "node tests/bulk-code-api-integration-tests.js",
+    "test:bulk-all": "./tests/run-all-bulk-code-tests.sh",
     "docker:build": "docker build -t live-streaming-portal .",
     "docker:run": "docker run -p 3000:3000 live-streaming-portal",
     "docker:compose": "docker-compose up -d"
@@ -50,6 +55,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "dotenv": "^16.6.1",
     "eslint": "^9",
     "eslint-config-next": "15.4.6",
     "tailwindcss": "^4"

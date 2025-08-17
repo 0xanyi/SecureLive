@@ -12,6 +12,18 @@ interface EventFormData {
   description: string;
   start_date: string;
   end_date: string;
+  bulk_code_ids: string[];
+}
+
+interface BulkCodeOption {
+  id: string;
+  code: string;
+  name: string;
+  usage_count: number;
+  max_usage_count: number;
+  capacity_percentage: number;
+  is_linked_to_event: boolean;
+  is_linked_to_current_event: boolean;
 }
 
 export function EventsManagement() {
@@ -20,11 +32,14 @@ export function EventsManagement() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [bulkCodes, setBulkCodes] = useState<BulkCodeOption[]>([]);
+  const [loadingBulkCodes, setLoadingBulkCodes] = useState(false);
   const [formData, setFormData] = useState<EventFormData>({
     title: '',
     description: '',
     start_date: '',
     end_date: '',
+    bulk_code_ids: [],
   });
 
   useEffect(() => {
@@ -55,6 +70,25 @@ export function EventsManagement() {
       console.error('Error fetching current event:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBulkCodes = async (eventId?: string) => {
+    setLoadingBulkCodes(true);
+    try {
+      const url = eventId 
+        ? `/api/admin/events/bulk-codes?event_id=${eventId}`
+        : '/api/admin/events/bulk-codes';
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setBulkCodes(data.bulk_codes || []);
+      }
+    } catch (error) {
+      console.error('Error fetching bulk codes:', error);
+    } finally {
+      setLoadingBulkCodes(false);
     }
   };
 
@@ -91,14 +125,20 @@ export function EventsManagement() {
     }
   };
 
-  const handleEdit = (event: Event) => {
+  const handleEdit = async (event: Event) => {
     setEditingEvent(event);
+    
+    // Fetch bulk codes first
+    await fetchBulkCodes(event.id);
+    
     setFormData({
       title: event.title,
       description: event.description || '',
       start_date: new Date(event.start_date).toISOString().slice(0, 16),
       end_date: new Date(event.end_date).toISOString().slice(0, 16),
+      bulk_code_ids: [], // Will be set by the checkbox state based on is_linked_to_current_event
     });
+    
     setShowModal(true);
   };
 
@@ -129,13 +169,25 @@ export function EventsManagement() {
       description: '',
       start_date: '',
       end_date: '',
+      bulk_code_ids: [],
     });
     setEditingEvent(null);
+    setBulkCodes([]);
   };
 
-  const handleNewEvent = () => {
+  const handleNewEvent = async () => {
     resetForm();
+    await fetchBulkCodes();
     setShowModal(true);
+  };
+
+  const handleBulkCodeToggle = (codeId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      bulk_code_ids: prev.bulk_code_ids.includes(codeId)
+        ? prev.bulk_code_ids.filter(id => id !== codeId)
+        : [...prev.bulk_code_ids, codeId]
+    }));
   };
 
   if (loading) {
@@ -315,6 +367,50 @@ export function EventsManagement() {
                 required
               />
             </div>
+          </div>
+
+          {/* Bulk Code Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Link Bulk Access Codes (Optional)
+            </label>
+            {loadingBulkCodes ? (
+              <div className="text-sm text-gray-500">Loading bulk codes...</div>
+            ) : bulkCodes.length === 0 ? (
+              <div className="text-sm text-gray-500">
+                No available bulk codes found. Create bulk codes first to link them to events.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">
+                {bulkCodes.map((code) => (
+                  <label key={code.id} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.bulk_code_ids.includes(code.id) || code.is_linked_to_current_event}
+                      onChange={() => handleBulkCodeToggle(code.id)}
+                      disabled={code.is_linked_to_event && !code.is_linked_to_current_event}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-900">
+                          {code.name} ({code.code})
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {code.usage_count}/{code.max_usage_count} used ({code.capacity_percentage}%)
+                        </span>
+                      </div>
+                      {code.is_linked_to_event && !code.is_linked_to_current_event && (
+                        <span className="text-xs text-orange-600">Already linked to another event</span>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Linking bulk codes to events will automatically deactivate them when the event ends.
+            </p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">

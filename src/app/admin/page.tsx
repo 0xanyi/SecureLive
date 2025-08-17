@@ -3,6 +3,7 @@ import { DashboardStatsClient } from '@/components/admin/DashboardStatsClient'
 import { RecentActivity } from '@/components/admin/RecentActivity'
 import { QuickActions } from '@/components/admin/QuickActions'
 import { DashboardHeader } from '@/components/admin/DashboardHeader'
+import { BulkCodeAlerts } from '@/components/admin/BulkCodeAlerts'
 
 export default async function AdminDashboard() {
   // Mock data for development mode
@@ -18,8 +19,13 @@ export default async function AdminDashboard() {
   const mockRecentSessions = [
     {
       id: '1',
+      code_id: 'test-code-1',
+      session_token: 'test-token-1',
       started_at: new Date().toISOString(),
+      last_activity: new Date().toISOString(),
       ip_address: '192.168.1.100',
+      user_agent: 'Test Browser',
+      is_active: true,
       access_codes: {
         code: 'TEST001',
         name: 'Test Center',
@@ -28,8 +34,13 @@ export default async function AdminDashboard() {
     },
     {
       id: '2',
+      code_id: 'test-code-2',
+      session_token: 'test-token-2',
       started_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+      last_activity: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
       ip_address: '192.168.1.101',
+      user_agent: 'Test Browser',
+      is_active: true,
       access_codes: {
         code: 'IND001',
         name: 'John Doe',
@@ -95,6 +106,9 @@ export default async function AdminDashboard() {
 
         {/* Dashboard Stats */}
         <DashboardStatsClient />
+
+        {/* Bulk Code Alerts */}
+        <BulkCodeAlerts showRefreshButton={true} />
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-6">

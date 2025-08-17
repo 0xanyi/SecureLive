@@ -49,7 +49,7 @@ export default async function CodesPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <p className="text-sm text-gray-600">Total Codes</p>
           <p className="text-2xl font-bold text-gray-900">
@@ -72,6 +72,12 @@ export default async function CodesPage() {
           <p className="text-sm text-gray-600">Individual Codes</p>
           <p className="text-2xl font-bold text-purple-600">
             {codes?.filter(code => code.type === 'individual').length || 0}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <p className="text-sm text-gray-600">Bulk Codes</p>
+          <p className="text-2xl font-bold text-indigo-600">
+            {codes?.filter(code => code.type === 'bulk').length || 0}
           </p>
         </div>
       </div>

@@ -11,7 +11,8 @@ import {
   Users, 
   Settings,
   Calendar,
-  UserCog
+  UserCog,
+  Trash2
 } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 
@@ -34,9 +35,12 @@ const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, permission: null },
   { name: 'Events', href: '/admin/events', icon: Calendar, permission: 'canManageEvents' as const },
   { name: 'Access Codes', href: '/admin/codes', icon: Ticket, permission: 'canGenerateCodes' as const },
+  { name: 'Bulk Codes', href: '/admin/bulk-codes', icon: Users, permission: 'canGenerateCodes' as const },
   { name: 'Email Center', href: '/admin/emails', icon: Mail, permission: 'canManageEmails' as const },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3, permission: 'canViewAnalytics' as const },
+  { name: 'Bulk Analytics', href: '/admin/bulk-analytics', icon: BarChart3, permission: 'canViewAnalytics' as const },
   { name: 'Active Sessions', href: '/admin/sessions', icon: Users, permission: null },
+  { name: 'Cleanup Management', href: '/admin/cleanup', icon: Trash2, permission: 'canManageSettings' as const },
   { name: 'Admin Users', href: '/admin/users', icon: UserCog, permission: 'canManageUsers' as const },
   { name: 'Settings', href: '/admin/settings', icon: Settings, permission: 'canManageSettings' as const },
 ]

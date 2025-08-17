@@ -18,7 +18,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { title, description, start_date, end_date } = body;
+    const { title, description, start_date, end_date, bulk_code_ids } = body;
 
     if (!title || !start_date || !end_date) {
       return NextResponse.json(
@@ -58,6 +58,31 @@ export async function PUT(
 
     if (!event) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+
+    // Handle bulk code linking
+    if (bulk_code_ids !== undefined) {
+      // First, unlink any existing bulk codes from this event
+      await supabase
+        .from('access_codes')
+        .update({ event_id: null })
+        .eq('event_id', params.id)
+        .eq('type', 'bulk');
+
+      // Then link the new bulk codes if provided
+      if (Array.isArray(bulk_code_ids) && bulk_code_ids.length > 0) {
+        const { error: linkError } = await supabase
+          .from('access_codes')
+          .update({ event_id: params.id })
+          .in('id', bulk_code_ids)
+          .eq('type', 'bulk')
+          .eq('is_active', true);
+
+        if (linkError) {
+          console.error('Error linking bulk codes to event:', linkError);
+          // Don't fail the event update, just log the error
+        }
+      }
     }
 
     return NextResponse.json({ event });

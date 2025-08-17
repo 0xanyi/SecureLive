@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, start_date, end_date } = body;
+    const { title, description, start_date, end_date, bulk_code_ids } = body;
 
     if (!title || !start_date || !end_date) {
       return NextResponse.json(
@@ -70,6 +70,21 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Error creating event:', error);
       return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });
+    }
+
+    // Link bulk codes to the event if provided
+    if (bulk_code_ids && Array.isArray(bulk_code_ids) && bulk_code_ids.length > 0) {
+      const { error: linkError } = await supabase
+        .from('access_codes')
+        .update({ event_id: event.id })
+        .in('id', bulk_code_ids)
+        .eq('type', 'bulk')
+        .eq('is_active', true);
+
+      if (linkError) {
+        console.error('Error linking bulk codes to event:', linkError);
+        // Don't fail the event creation, just log the error
+      }
     }
 
     return NextResponse.json({ event }, { status: 201 });

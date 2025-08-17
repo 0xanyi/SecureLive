@@ -16,14 +16,27 @@ export async function GET() {
       activeCodesResult,
       totalSessionsResult,
       activeSessionsResult,
-      todayAttendanceResult
+      todayAttendanceResult,
+      bulkCodesResult,
+      activeBulkCodesResult,
+      nearCapacityBulkCodesResult
     ] = await Promise.all([
       supabase.from('access_codes').select('*', { count: 'exact', head: true }),
       supabase.from('access_codes').select('*', { count: 'exact', head: true }).eq('is_active', true),
       supabase.from('sessions').select('*', { count: 'exact', head: true }),
       supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase.from('attendance_logs').select('*', { count: 'exact', head: true }).eq('date', new Date().toISOString().split('T')[0])
+      supabase.from('attendance_logs').select('*', { count: 'exact', head: true }).eq('date', new Date().toISOString().split('T')[0]),
+      supabase.from('access_codes').select('*', { count: 'exact', head: true }).eq('type', 'bulk'),
+      supabase.from('access_codes').select('*', { count: 'exact', head: true }).eq('type', 'bulk').eq('is_active', true),
+      supabase.from('access_codes').select('usage_count, max_usage_count').eq('type', 'bulk').eq('is_active', true)
     ])
+
+    // Calculate bulk code metrics
+    const bulkCodesData = nearCapacityBulkCodesResult.data || []
+    const nearCapacityCount = bulkCodesData.filter(code => {
+      const percentage = (code.usage_count || 0) / (code.max_usage_count || 1) * 100
+      return percentage >= 80
+    }).length
 
     // Log each result for debugging
     console.log('API Query results:', {
@@ -31,7 +44,10 @@ export async function GET() {
       activeCodes: activeCodesResult,
       totalSessions: totalSessionsResult,
       activeSessions: activeSessionsResult,
-      todayAttendance: todayAttendanceResult
+      todayAttendance: todayAttendanceResult,
+      bulkCodes: bulkCodesResult,
+      activeBulkCodes: activeBulkCodesResult,
+      nearCapacityBulkCodes: nearCapacityCount
     })
 
     // Check for errors in any of the queries
@@ -40,7 +56,10 @@ export async function GET() {
       activeCodesResult.error,
       totalSessionsResult.error,
       activeSessionsResult.error,
-      todayAttendanceResult.error
+      todayAttendanceResult.error,
+      bulkCodesResult.error,
+      activeBulkCodesResult.error,
+      nearCapacityBulkCodesResult.error
     ].filter(Boolean)
 
     if (errors.length > 0) {
@@ -56,7 +75,10 @@ export async function GET() {
       activeCodes: activeCodesResult.count || 0,
       totalSessions: totalSessionsResult.count || 0,
       activeSessions: activeSessionsResult.count || 0,
-      todayAttendance: todayAttendanceResult.count || 0
+      todayAttendance: todayAttendanceResult.count || 0,
+      bulkCodes: bulkCodesResult.count || 0,
+      activeBulkCodes: activeBulkCodesResult.count || 0,
+      nearCapacityBulkCodes: nearCapacityCount
     }
 
     console.log('API Final stats:', stats)
