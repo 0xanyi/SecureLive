@@ -5,8 +5,7 @@ import { generateSessionToken, getClientIP, getUserAgent } from '@/lib/utils'
 import type { ApiResponse } from '@/types/database'
 import { 
   BulkCodeError, 
-  BulkCodeErrorFactory,
-  BulkCodeErrorCode 
+  BulkCodeErrorFactory
 } from '@/lib/errors/bulk-code-errors'
 import { BulkCodeLogger } from '@/lib/errors/bulk-code-logger'
 import { BulkCodeRecoveryManager } from '@/lib/errors/bulk-code-recovery'
@@ -38,6 +37,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createServiceClient()
     let accessCode: any = null
+    let codeError: any = null
 
     // Try to get from cache first for bulk codes
     const cachedCode = cache.getBulkCode(code)
@@ -82,13 +82,14 @@ export async function POST(request: NextRequest) {
     } else {
       // Cache miss - fetch from database
       const dbLookupStart = Date.now()
-      const { data: dbAccessCode, error: codeError } = await supabase
+      const { data: dbAccessCode, error: dbCodeError } = await supabase
         .from('access_codes')
         .select('*')
         .eq('code', code.toUpperCase())
         .eq('is_active', true)
         .single()
 
+      codeError = dbCodeError
       performanceMonitor.recordMetric('db_code_lookup', Date.now() - dbLookupStart, !codeError)
 
       if (codeError || !dbAccessCode) {
@@ -304,8 +305,6 @@ export async function POST(request: NextRequest) {
 
     // Create new session with atomic transaction for bulk codes
     const sessionToken = generateSessionToken()
-    const clientIP = getClientIP(request)
-    const userAgent = getUserAgent(request)
     const now = new Date().toISOString()
 
     let session: any = null
