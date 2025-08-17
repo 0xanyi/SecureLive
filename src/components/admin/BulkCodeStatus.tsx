@@ -40,17 +40,21 @@ export function BulkCodeStatus({
   const fetchUsage = async () => {
     try {
       setError(null)
-      const response = await fetch(`/api/admin/bulk-codes/usage?code_id=${bulkCode.id}`)
+      const response = await fetch(`/api/admin/bulk-codes/usage-simple?codeId=${bulkCode.id}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch usage data')
       }
       
       const data = await response.json()
-      setUsage(data.usage)
-      
-      if (onUsageUpdate) {
-        onUsageUpdate(data.usage)
+      if (data.success && data.data) {
+        setUsage(data.data)
+        
+        if (onUsageUpdate) {
+          onUsageUpdate(data.data)
+        }
+      } else {
+        throw new Error(data.error || 'Failed to fetch usage data')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')

@@ -1,43 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import type { ApiResponse, BulkCodeUsage } from '@/types/database'
-import { BulkCodeCache } from '@/lib/cache/bulk-code-cache'
-import { BulkCodePerformanceMonitor } from '@/lib/monitoring/bulk-code-performance'
 
 export async function GET(request: NextRequest) {
-  const cache = BulkCodeCache.getInstance()
-  const performanceMonitor = BulkCodePerformanceMonitor.getInstance()
-  const startTime = Date.now()
-  const operationId = performanceMonitor.startOperation('bulk_code_usage_api')
-
   try {
     const { searchParams } = new URL(request.url)
     const codeId = searchParams.get('codeId')
     
-    console.log('Bulk code usage API called with codeId:', codeId)
+    console.log('Simple usage API called with codeId:', codeId)
 
     const supabase = await createServiceClient()
 
     if (codeId) {
-      // Get usage data for a specific bulk code
-      
-      // Try cache first
-      const cachedUsage = cache.getUsageData(codeId)
-      if (cachedUsage) {
-        performanceMonitor.endOperation(operationId, 'bulk_code_usage_api', startTime, true, codeId, { 
-          cache_hit: true,
-          single_code: true 
-        })
-        
-        return NextResponse.json<ApiResponse<BulkCodeUsage>>({
-          success: true,
-          data: cachedUsage
-        })
-      }
-
-      // Cache miss - get usage data directly from tables
-      const batchStart = Date.now()
-      
       // Get the bulk code details
       const { data: codeData, error: codeError } = await supabase
         .from('access_codes')
@@ -50,11 +24,6 @@ export async function GET(request: NextRequest) {
 
       if (codeError || !codeData) {
         console.log('Bulk code not found:', codeId, codeError)
-        performanceMonitor.endOperation(operationId, 'bulk_code_usage_api', startTime, false, codeId, { 
-          error: 'code_not_found',
-          single_code: true 
-        })
-        
         return NextResponse.json<ApiResponse>(
           { success: false, error: 'Bulk code not found', debug: { codeId, error: codeError } },
           { status: 404 }
@@ -91,15 +60,7 @@ export async function GET(request: NextRequest) {
         time_remaining_minutes: timeRemainingMinutes
       }
 
-      performanceMonitor.recordMetric('direct_usage_lookup', Date.now() - batchStart, true, codeId)
-
-      // Cache the result
-      cache.setUsageData(usageData)
-
-      performanceMonitor.endOperation(operationId, 'bulk_code_usage_api', startTime, true, codeId, { 
-        cache_hit: false,
-        single_code: true 
-      })
+      console.log('Returning usage data:', usageData)
 
       return NextResponse.json<ApiResponse<BulkCodeUsage>>({
         success: true,
@@ -107,22 +68,16 @@ export async function GET(request: NextRequest) {
       })
 
     } else {
-      // Get usage data for all active bulk codes
-      const batchStart = Date.now()
-      
       // Get all bulk codes
       const { data: bulkCodes, error: codesError } = await supabase
         .from('access_codes')
         .select('*')
         .eq('type', 'bulk')
 
+      console.log('All bulk codes query result:', { count: bulkCodes?.length, error: codesError })
+
       if (codesError) {
         console.error('Error fetching bulk codes:', codesError)
-        performanceMonitor.endOperation(operationId, 'bulk_code_usage_api', startTime, false, undefined, { 
-          error: 'codes_fetch_failed',
-          single_code: false 
-        })
-        
         return NextResponse.json<ApiResponse>(
           { success: false, error: 'Failed to fetch bulk codes' },
           { status: 500 }
@@ -153,7 +108,7 @@ export async function GET(request: NextRequest) {
           ? Math.max(0, Math.floor((new Date(code.expires_at).getTime() - Date.now()) / (1000 * 60)))
           : 0
 
-        const usageData: BulkCodeUsage = {
+        return {
           code_id: code.id,
           current_usage: currentUsage,
           max_capacity: maxCapacity,
@@ -163,19 +118,9 @@ export async function GET(request: NextRequest) {
           is_expired: isExpired,
           time_remaining_minutes: timeRemainingMinutes
         }
-
-        // Cache each result
-        cache.setUsageData(usageData)
-        
-        return usageData
       })
 
-      performanceMonitor.recordMetric('direct_usage_lookup_all', Date.now() - batchStart, true)
-
-      performanceMonitor.endOperation(operationId, 'bulk_code_usage_api', startTime, true, undefined, { 
-        single_code: false,
-        result_count: allUsageData.length 
-      })
+      console.log('Returning all usage data:', allUsageData.length, 'codes')
 
       return NextResponse.json<ApiResponse<BulkCodeUsage[]>>({
         success: true,
@@ -184,13 +129,9 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Bulk code usage API error:', error)
-    performanceMonitor.endOperation(operationId, 'bulk_code_usage_api', startTime, false, codeId || undefined, { 
-      error: 'unexpected_error' 
-    })
-    
+    console.error('Simple bulk code usage API error:', error)
     return NextResponse.json<ApiResponse>(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Internal server error', debug: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

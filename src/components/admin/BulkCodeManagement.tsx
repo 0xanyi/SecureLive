@@ -49,7 +49,11 @@ export function BulkCodeManagement({
       }
       
       const data = await response.json()
-      setBulkCodes(data.codes || [])
+      if (data.success) {
+        setBulkCodes(data.codes || [])
+      } else {
+        throw new Error(data.error || 'Failed to fetch bulk codes')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {

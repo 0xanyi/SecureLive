@@ -132,6 +132,12 @@ export interface ApiResponse<T = unknown> {
   data?: T
   error?: string
   message?: string
+  meta?: {
+    total?: number
+    limit?: number
+    offset?: number
+    hasMore?: boolean
+  }
 }
 
 export interface SessionValidationResponse {
